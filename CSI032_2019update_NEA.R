@@ -9,7 +9,6 @@
 library(dplyr)
 library(tidyr)
 library(data.table)
-library(operators)
 
 # The latest available assessments will be used, although we will only refer to
 # year 2017, as official landings are only available until then.
@@ -134,7 +133,7 @@ format_sag <- function(x,y){
 sag_complete <- format_sag(summ, refpts)
 unique(sag_complete$StockKeyLabel)
 
-#196 stocks, check
+#197 stocks, ok
 
 # Load a file with the Ecoregions attributed for this product. In this file, 
 # the Ecoregions used in the latest STECF report are also shown, some slight 
@@ -280,6 +279,9 @@ catch_dat_2017 <- catch_dat_2017 %>%
                               "27.6.b.1", "27.7.c", "27.7.k.1", "27.8.e.1", "27.8.d.1", "27.9.b.1") ~ "Oceanic",
                 TRUE ~ "OTHER"))
 
+library(operators)
+detach("package:dplyr", unload=TRUE)
+library(dplyr)
 catch_dat_2017 <- catch_dat_2017 %>%
         mutate(ECOREGION2 = case_when(              
                 .$Species %in% c("ARU") & .$Area %in% c("27.7", "27.8", "27.9", "27.10", "27.12", "27.6.b") ~ "Widely",
@@ -301,7 +303,7 @@ catch_dat_2017 <- catch_dat_2017[, -c(4:5)]
 colnames(catch_dat_2017) <- c("Species", "Area", "Value", "Ecoregion")
 catch_dat_2017 <- catch_dat_2017 %>% filter(Ecoregion != "OTHER")
 
-
+detach("package:operators", unload=TRUE)
 
 
 # The shadowed area in Figure 1 represents landings of unassessed stocks
@@ -339,9 +341,10 @@ current <- unique (current)
 
 # check <- unique(current[c("color_fig2", "F_FMSY", "SSB_MSYBtrigger")])
 
+
 figure2 <- current %>%
         dplyr::group_by(Ecoregion, color_fig2) %>% 
-        dplyr::summarise(n= n()) %>%
+        dplyr::summarise(n= dplyr::n()) %>%
         ungroup() %>%
         spread(color_fig2, n, fill=0)
 
@@ -375,7 +378,11 @@ df<- dplyr::select(df,Year,
                    SSB_MSYBtrigger) 
 df2 <-tidyr::gather(df,Metric, Value, -Year, -Ecoregion, -StockKeyLabel) 
 df2 <- df2[complete.cases(df2),]
-        
+unique(df2$Ecoregion)
+
+# Wont use Arctic Ocean and Iceland, Greenland and Faroes for the mean fo Figure 3        
+df2 <- df2 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Baltic Sea", "Greater North Sea")) 
+
 df3 <- dplyr::group_by(df2,Metric, Year) %>%
         mutate(Max = max(Value), Min = min(Value))
         
@@ -404,7 +411,8 @@ figure3 <- ssb %>% left_join(fmsy)
 figure3 <- figure3 %>% left_join(stks)
 
 # Remove the only stock with biomass data from 1905 to 1945, dgs.27.nea
-figure3 <- figure3 %>% filter(Year > 1945)
+figure3 <- figure3 %>% filter(Year > 1946)
+figure3 <- figure3 %>% filter(Year < 2018)
 
 write.csv(figure3, file = "CSI032_figure3NEA_update2019.csv")
 
