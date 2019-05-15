@@ -46,8 +46,11 @@ load_sag_summary <-  function(year){
         
         #Fix a couple of mismatches in sid and sag
         sid$AssessmentYear[sid$fishstock == "cod.21.1a-e"] <- "2017"
+        sid$AssessmentYear[sid$fishstock == "had.27.5a"] <- "2018"
+        sid$AssessmentYear[sid$fishstock == "her.27.5a"] <- "2018"
         sid$AssessmentYear[sid$fishstock == "reb.2127.dp"] <- "2016"
         sid$AssessmentYear[sid$fishstock == "reb.2127.sp"] <- "2016"
+        sid$AssessmentYear[sid$fishstock == "cod.27.5a"] <- "2018"
         out$fishstock[out$fishstock == "ank.27.78ab"] <- "ank.27.78abd"
         out$fishstock[out$fishstock == "Pil.27.7"] <- "pil.27.7"
         
@@ -78,8 +81,11 @@ load_sag_refpts <- function(year){
         colnames(sid) <- c("StockKeyLabel", "AssessmentYear", "PreviousStockKeyLabel")
         
         sid$AssessmentYear[sid$StockKeyLabel == "cod.21.1a-e"] <- "2017"
+        sid$AssessmentYear[sid$StockKeyLabel == "had.27.5a"] <- "2018"
+        sid$AssessmentYear[sid$StockKeyLabel == "her.27.5a"] <- "2018"
         sid$AssessmentYear[sid$StockKeyLabel == "reb.2127.dp"] <- "2016"
         sid$AssessmentYear[sid$StockKeyLabel == "reb.2127.sp"] <- "2016"
+        sid$AssessmentYear[sid$StockKeyLabel == "cod.27.5a"] <- "2018"
         out$StockKeyLabel[out$StockKeyLabel == "ank.27.78ab"] <- "ank.27.78abd"
         out$StockKeyLabel[out$StockKeyLabel == "Pil.27.7"] <- "pil.27.7"
         
@@ -167,6 +173,18 @@ unique(noICES$StockKeyLabel)
 sag_complete <- left_join(sag_complete,ecoregions, by = "StockKeyLabel")
 names(sag_complete)
 
+##Update 15 May
+##Some stocks in good GES in Iceland do not show up because the reference point
+## is HR instead of FMSY
+sag_complete$FMSY[which(sag_complete$StockKeyLabel == "aru.27.5a14")] <- 0.171
+sag_complete$FMSY[which(sag_complete$StockKeyLabel == "bli.27.5a14")] <- 1.750
+sag_complete$FMSY[which(sag_complete$StockKeyLabel == "cod.27.5a")] <- 0.20
+sag_complete$FMSY[which(sag_complete$StockKeyLabel == "pok.27.5a")] <- 0.20
+# sag_complete$FMSY[which(sag_complete$StockKeyLabel == "her.27.5a")] <- 0.15
+sag_complete$FMSY[which(sag_complete$StockKeyLabel == "lin.27.5a")] <- 0.24
+sag_complete$FMSY[which(sag_complete$StockKeyLabel == "usk.27.5a14")] <- 0.13
+
+# sag_complete <- sag_complete %>% filter(Year < 2018)
 
 ########### Figure1 and 2 #############
 #######################################
@@ -215,6 +233,12 @@ stockstatus_CLD_current <- function(x) {
 
 current <- stockstatus_CLD_current(sag_complete)
 
+current$F_FMSY[which(current$StockKeyLabel == "cod.27.5a")] <- 0.91
+# current$F_FMSY[which(current$StockKeyLabel == "aru.27.5a14")] <- 0.91
+# current$F_FMSY[which(current$StockKeyLabel == "bli.27.5a14")] <- 0.91
+current$F_FMSY[which(current$StockKeyLabel == "pok.27.5a")] <- 0.56
+current$F_FMSY[which(current$StockKeyLabel == "lin.27.5a")] <- 0.99
+current$F_FMSY[which(current$StockKeyLabel == "had.27.5a")] <- 0.369/0.4
 
 # In figure 1, GREEN means landings of assessed stocks with info for F and SSB 
 # reference points, ORANGE means landings of assessed stocks with info for only
@@ -230,7 +254,7 @@ current <- unique (current)
 
 #If there are no landings but catches, use catches
 current <- transform(current, landings2 = ifelse(!is.na(landings), landings, catches))
-
+current[is.na(current)] <- 0
 figure1 <- current %>%
         group_by(Ecoregion, color_fig1) %>% 
         summarise(landings = sum(landings2)) %>%
@@ -328,6 +352,16 @@ write.csv(figure1, file = "CSI032_figure1NEA_update2019.csv")
 # in GES, or in case only one reference point is available, this is in GES.
 # RED means both reference points not in GES, or if only one reference point is 
 # available, it is not in GES.
+
+current <- stockstatus_CLD_current(sag_complete)
+
+current$F_FMSY[which(current$StockKeyLabel == "cod.27.5a")] <- 0.91
+# current$F_FMSY[which(current$StockKeyLabel == "aru.27.5a14")] <- 0.91
+# current$F_FMSY[which(current$StockKeyLabel == "bli.27.5a14")] <- 0.91
+current$F_FMSY[which(current$StockKeyLabel == "pok.27.5a")] <- 0.56
+current$F_FMSY[which(current$StockKeyLabel == "lin.27.5a")] <- 0.99
+current$F_FMSY[which(current$StockKeyLabel == "had.27.5a")] <- 0.369/0.4
+
 
 current$color_fig2 <- case_when(current$F_FMSY < 1 & current$SSB_MSYBtrigger > 1 ~ "GREEN",
                                 current$F_FMSY < 1 | current$SSB_MSYBtrigger > 1 ~ "ORANGE",
