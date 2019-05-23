@@ -321,6 +321,22 @@ catch_dat_2017 <- catch_dat_2017 %>%
                                                         "27.6.a", "27.12.b" ) ~ "Widely")) 
 
 
+#Problem with Iceland, Greenland and Faroes landings, catches in Widely wont show up also here
+catch_dat_2017 <- catch_dat_2017 %>%
+        mutate(ECOREGION2 = case_when(              
+                .$Species %in% c("ARU") & .$Area %in% c("27.7", "27.8", "27.9", "27.10", "27.12", "27.6.b") ~ "Widely",
+                .$Species %in% c("BLI", "BOC", "BSF","DGS", "GFB", "MAC", "SDV","WHB")  ~ "Widely",
+                .$Species %in% c("HER") & .$Area %in% c("27.1", "27.2") ~ "Widely",
+                .$Species %in% c("HKE") & .$Area %in% c("27.4", "27.6", "27.7", "27.8.a","27.8.b","27.8.d") ~ "Widely",
+                .$Species %in% c("HOM") & .$Area %in% c("27.8", "27.2.a", "27.4.a", "27.6.a",
+                                                        "27.7.a","27.7.b","27.7.c","27.7.e","27.7.f",
+                                                        "27.7.g","27.7.h","27.7.i","27.7.j","27.7.k") ~ "Widely",
+                .$Species %in% c("LIN") & .$Area %!in% c("27.1", "27.2") ~ "Widely",
+                .$Species %in% c("RNG") & .$Area %in% c("27.6", "27.7",  "27.12.b") ~ "Widely",
+                .$Species %in% c("USK") & .$Area %in% c("27.4", "27.7", "27.8", "27.9","27.3.a",
+                                                        "27.6.a", "27.12.b" ) ~ "Widely")) 
+
+
 catch_dat_2017 <- transform(catch_dat_2017, Final = ifelse(!is.na(ECOREGION2), "Widely", ECOREGION))
 
 catch_dat_2017 <- catch_dat_2017[, -c(4:5)]

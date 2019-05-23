@@ -100,6 +100,11 @@ gfcm <- Med_catches2016_GFCM
 figure1 <- left_join(figure1, gfcm)
 
 write.csv(figure1, file = "CSI032_figure1MED&BS_update2019.csv")
+#Note, 23 May 2019:
+# We can't consider B2003 a valid reference point for GES, so, all landings attributed
+# to the GREEN in figure one will be moved to orange in the Mediterranean.
+
+
 
 
 df2$color_fig2 <- case_when(df2$F_Fref < 1 & df2$B_Bref > 1 ~ "GREEN",
