@@ -25,6 +25,7 @@ load_sid <- function(year){
 }
 
 # We will use the latest available assessments for each stock, from 2016 to 2019
+#DM: we may need to consider going back 5 years, i.e. 2015-2019 (that way we will make sure to have all teh stocks that only provide advcie every 5 years)
 
 # Load functions to load summary and reference points for those years
 
@@ -41,6 +42,7 @@ load_sag_summary <-  function(year){
         # considered full assessments (although advice may exist)
         
         sid <- subset(sid, !(DataCategory %in% c("6.2", "5.2", "6.3", "5.9", "5", "6.9", "6")))
+        #DM : is it possible to say DataCategory >=5 instead? Just in case in future somebody uses one of teh other 5.x or 6.x methods
         sid <- dplyr::select(sid,StockKeyLabel,
                              YearOfLastAssessment, PreviousStockKeyLabel)
         colnames(sid) <- c("fishstock", "AssessmentYear", "PreviousStockKeyLabel")
@@ -90,6 +92,7 @@ load_sag_refpts <- function(year){
         # sid$AssessmentYear[sid$StockKeyLabel == "cod.27.5a"] <- "2018"
         out$StockKeyLabel[out$StockKeyLabel == "ank.27.78ab"] <- "ank.27.78abd"
         out$StockKeyLabel[out$StockKeyLabel == "Pil.27.7"] <- "pil.27.7"
+        #DM: why are these two not commented out, but they are commented out in the function above?
         
         old <- dplyr::filter(sid, AssessmentYear < 2017)
         out1 <- merge(out, sid, by = c("StockKeyLabel", "AssessmentYear"),all = FALSE)
@@ -115,7 +118,6 @@ refpts <- load_sag_refpts(year)
 a <- unique(summ$fishstock)
 b <- unique(refpts$StockKeyLabel)
 setdiff(b,a)
-
 # should be character(0)
 
 
@@ -179,13 +181,23 @@ names(sag_complete)
 ## Check if this is true this year as well. 
 ## Some stocks in good GES in Iceland do not show up because the reference point
 ## is HR instead of FMSY
-# sag_complete$FMSY[which(sag_complete$StockKeyLabel == "aru.27.5a14")] <- 0.171
-# sag_complete$FMSY[which(sag_complete$StockKeyLabel == "bli.27.5a14")] <- 1.750
-# sag_complete$FMSY[which(sag_complete$StockKeyLabel == "cod.27.5a")] <- 0.20
-# sag_complete$FMSY[which(sag_complete$StockKeyLabel == "pok.27.5a")] <- 0.20
+sag_complete$FMSY[which(sag_complete$StockKeyLabel == "aru.27.5a14")] <- 0.171
+
+# sag_complete$FMSY[which(sag_complete$StockKeyLabel == "bli.27.5a14")] <- 1.750 
+#DM: No RefPts for this stock
+
+sag_complete$FMSY[which(sag_complete$StockKeyLabel == "cod.27.5a")] <- 0.20 
+#DM - cod5a reported both F and HR, but uses HRmsy (0.2). But the time series below is F, not HR:
+# sag_complete$F[which(sag_complete$StockKeyLabel == "cod.27.5a")]
+
+sag_complete$FMSY[which(sag_complete$StockKeyLabel == "pok.27.5a")] <- 0.20
+#DM: same story as for cod5a (F time series, not HR)
+
 # sag_complete$FMSY[which(sag_complete$StockKeyLabel == "her.27.5a")] <- 0.15
-# sag_complete$FMSY[which(sag_complete$StockKeyLabel == "lin.27.5a")] <- 0.24
-# sag_complete$FMSY[which(sag_complete$StockKeyLabel == "usk.27.5a14")] <- 0.13
+# DM: stock uses Fmsy. They have HRmgt for their management plan (0.15), but for our indices we should use Fmsy and the F time series (both currently correct)
+
+sag_complete$FMSY[which(sag_complete$StockKeyLabel == "lin.27.5a")] <- 0.24
+sag_complete$FMSY[which(sag_complete$StockKeyLabel == "usk.27.5a14")] <- 0.17
 
 
 #We use the latest available assessments but only up to the year 2018
