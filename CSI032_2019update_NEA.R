@@ -38,7 +38,7 @@ load_sag_summary <-  function(year){
         # Stocks with Data Category 5 and 6 are not used, as these can't be 
         # considered full assessments (although advice may exist)
         
-        sid <- subset(sid, !(DataCategory %in% c("6.2", "5.2", "6.3", "5.9", "5", "6.9", "6")))
+        # sid <- subset(sid, !(DataCategory %in% c("6.2", "5.2", "6.3", "5.9", "5", "6.9", "6")))
         sid <- dplyr::select(sid,StockKeyLabel,
                              YearOfLastAssessment, PreviousStockKeyLabel)
         colnames(sid) <- c("fishstock", "AssessmentYear", "PreviousStockKeyLabel")
@@ -75,7 +75,7 @@ load_sag_refpts <- function(year){
                                combine = TRUE)
         sid<-load_sid(year)
         sid <-dplyr::filter(sid,!is.na(YearOfLastAssessment))
-        sid <- subset(sid, !(DataCategory %in% c("6.2", "5.2", "6.3", "5.9", "5", "6.9", "6")))
+        # sid <- subset(sid, !(DataCategory %in% c("6.2", "5.2", "6.3", "5.9", "5", "6.9", "6")))
         sid <- dplyr::select(sid,StockKeyLabel,
                              YearOfLastAssessment, PreviousStockKeyLabel)
         colnames(sid) <- c("StockKeyLabel", "AssessmentYear", "PreviousStockKeyLabel")
@@ -101,6 +101,8 @@ load_sag_refpts <- function(year){
 
 
 # Get rid of "InitAdvice" assessments, some stocks have 2 assessments per year
+## Only keep advice, now there are several other categories here
+
 
 summ <- load_sag_summary(year)
 out <- dplyr::filter(summ, Purpose == "InitAdvice")
@@ -145,9 +147,9 @@ unique(sag_complete$StockKeyLabel)
 # the Ecoregions used in the latest STECF report are also shown, some slight 
 # differences exist, but mostly in non-EU waters.
 
-ecoregions <- read.csv("Ecoregions.csv")
+ecoregions <- read.csv("Ecoregions_2019.csv")
 names(ecoregions)
-ecoregions <- ecoregions[,-2]
+# ecoregions <- ecoregions[,-2]
 
 unique(ecoregions$Ecoregion)
 
@@ -192,10 +194,141 @@ sag_complete$FMSY[which(sag_complete$StockKeyLabel == "usk.27.5a14")] <- 0.13
 # In figure1 and 2 only the current status of the stocks (as of 2017) is used
 # CHECK!
 
+# stockstatus_CLD_current <- function(x) {
+#         df<- dplyr::select(x,Year,
+#                            StockKeyLabel,
+#                            Ecoregion,
+#                            AssessmentYear,
+#                            F,
+#                            FMSY,
+#                            SSB,
+#                            MSYBtrigger,
+#                            catches,
+#                            landings,
+#                            discards)
+#         if(df$AssessmentYear == "2018"){
+#         df2<-dplyr::full_join(df %>% dplyr::group_by(StockKeyLabel) %>%
+#                                       dplyr::filter(AssessmentYear == 2018)%>%
+#                                       dplyr::filter(Year == 2017) %>%
+#                                       dplyr::mutate(F_FMSY =  ifelse(!is.na(FMSY),
+#                                                                      F / FMSY,
+#                                                                      NA)) %>%
+#                                       dplyr::select(StockKeyLabel,
+#                                                     Ecoregion,
+#                                                     F_FMSY,
+#                                                     catches,
+#                                                     landings,
+#                                                     discards,
+#                                                     FMSY,
+#                                                     F),
+#                               df %>%
+#                                       dplyr::group_by(StockKeyLabel) %>%
+#                                       dplyr::filter(AssessmentYear == 2018)%>%
+#                                       dplyr::filter(Year == 2017) %>%
+#                                       dplyr::mutate(SSB_MSYBtrigger = ifelse(!is.na(MSYBtrigger),
+#                                                                              SSB / MSYBtrigger,
+#                                                                              NA)) %>%
+#                                       dplyr::select(StockKeyLabel,
+#                                                     Ecoregion,
+#                                                     SSB_MSYBtrigger,
+#                                                     SSB,
+#                                                     MSYBtrigger))
+#         df2
+#         }
+#         if(df$AssessmentYear == "2017"){
+#                 df3<-dplyr::full_join(df %>% dplyr::group_by(StockKeyLabel) %>%
+#                                               dplyr::filter(AssessmentYear == 2017)%>%
+#                                               dplyr::filter(Year == 2016) %>%
+#                                               dplyr::mutate(F_FMSY =  ifelse(!is.na(FMSY),
+#                                                                              F / FMSY,
+#                                                                              NA)) %>%
+#                                               dplyr::select(StockKeyLabel,
+#                                                             Ecoregion,
+#                                                             F_FMSY,
+#                                                             catches,
+#                                                             landings,
+#                                                             discards,
+#                                                             FMSY,
+#                                                             F),
+#                                       df %>%
+#                                               dplyr::group_by(StockKeyLabel) %>%
+#                                               dplyr::filter(AssessmentYear == 2017)%>%
+#                                               dplyr::filter(Year == 2016) %>%
+#                                               dplyr::mutate(SSB_MSYBtrigger = ifelse(!is.na(MSYBtrigger),
+#                                                                                      SSB / MSYBtrigger,
+#                                                                                      NA)) %>%
+#                                               dplyr::select(StockKeyLabel,
+#                                                             Ecoregion,
+#                                                             SSB_MSYBtrigger,
+#                                                             SSB,
+#                                                             MSYBtrigger))
+#         df3
+#         }
+#         if(df$AssessmentYear == "2016"){
+#                 df4<-dplyr::full_join(df %>% dplyr::group_by(StockKeyLabel) %>%
+#                                               dplyr::filter(AssessmentYear == 2016)%>%
+#                                               dplyr::filter(Year == 2015) %>%
+#                                               dplyr::mutate(F_FMSY =  ifelse(!is.na(FMSY),
+#                                                                              F / FMSY,
+#                                                                              NA)) %>%
+#                                               dplyr::select(StockKeyLabel,
+#                                                             Ecoregion,
+#                                                             F_FMSY,
+#                                                             catches,
+#                                                             landings,
+#                                                             discards,
+#                                                             FMSY,
+#                                                             F),
+#                                       df %>%
+#                                               dplyr::group_by(StockKeyLabel) %>%
+#                                               dplyr::filter(AssessmentYear == 2016)%>%
+#                                               dplyr::filter(Year == 2015) %>%
+#                                               dplyr::mutate(SSB_MSYBtrigger = ifelse(!is.na(MSYBtrigger),
+#                                                                                      SSB / MSYBtrigger,
+#                                                                                      NA)) %>%
+#                                               dplyr::select(StockKeyLabel,
+#                                                             Ecoregion,
+#                                                             SSB_MSYBtrigger,
+#                                                             SSB,
+#                                                             MSYBtrigger))
+#                 df4
+#         }
+#         if(df$AssessmentYear == "2015"){
+#                 df5<-dplyr::full_join(df %>% dplyr::group_by(StockKeyLabel) %>%
+#                                               dplyr::filter(AssessmentYear == 2015)%>%
+#                                               dplyr::filter(Year == 2014) %>%
+#                                               dplyr::mutate(F_FMSY =  ifelse(!is.na(FMSY),
+#                                                                              F / FMSY,
+#                                                                              NA)) %>%
+#                                               dplyr::select(StockKeyLabel,
+#                                                             Ecoregion,
+#                                                             F_FMSY,
+#                                                             catches,
+#                                                             landings,
+#                                                             discards,
+#                                                             FMSY,
+#                                                             F),
+#                                       df %>%
+#                                               dplyr::group_by(StockKeyLabel) %>%
+#                                               dplyr::filter(AssessmentYear == 2015)%>%
+#                                               dplyr::filter(Year == 2014) %>%
+#                                               dplyr::mutate(SSB_MSYBtrigger = ifelse(!is.na(MSYBtrigger),
+#                                                                                      SSB / MSYBtrigger,
+#                                                                                      NA)) %>%
+#                                               dplyr::select(StockKeyLabel,
+#                                                             Ecoregion,
+#                                                             SSB_MSYBtrigger,
+#                                                             SSB,
+#                                                             MSYBtrigger))
+#                 df5
+#         }
+#         df6 <- rbind(df2, df3, df4, df5)
+#         df6
+# }
+
 stockstatus_CLD_current <- function(x) {
         df<- dplyr::select(x,Year,
                            StockKeyLabel,
-                           Ecoregion,
                            AssessmentYear,
                            F,
                            FMSY,
@@ -203,32 +336,40 @@ stockstatus_CLD_current <- function(x) {
                            MSYBtrigger,
                            catches,
                            landings,
-                           discards)
-        df2<-dplyr::full_join(df %>% dplyr::group_by(StockKeyLabel) %>%
-                                      dplyr::filter(Year == 2017) %>%
-                                      dplyr::mutate(F_FMSY =  ifelse(!is.na(FMSY),
-                                                                     F / FMSY,
-                                                                     NA)) %>%
-                                      dplyr::select(StockKeyLabel,
-                                                    Ecoregion,
-                                                    F_FMSY,
-                                                    catches,
-                                                    landings,
-                                                    discards,
-                                                    FMSY,
-                                                    F),
-                              df %>%
-                                      dplyr::group_by(StockKeyLabel) %>%
-                                      dplyr::filter(Year == 2017) %>%
-                                      dplyr::mutate(SSB_MSYBtrigger = ifelse(!is.na(MSYBtrigger),
-                                                                             SSB / MSYBtrigger,
-                                                                             NA)) %>%
-                                      dplyr::select(StockKeyLabel,
-                                                    Ecoregion,
-                                                    SSB_MSYBtrigger,
-                                                    SSB,
-                                                    MSYBtrigger))
-        df2
+                           discards,
+                           Ecoregion)
+        df$F <- as.numeric(df$F)
+        df$SSB <- as.numeric(df$SSB)
+        df$FMSY <- as.numeric(df$FMSY)
+        df$MSYBtrigger <- as.numeric(df$MSYBtrigger)
+        df2 <- dplyr::group_by(df,StockKeyLabel)
+        df2 <- dplyr::filter(df2,Year == AssessmentYear - 1)
+        df2 <- dplyr::mutate(df2,F_FMSY =  ifelse(!is.na(FMSY),
+                                                  F / FMSY,
+                                                  NA))
+        df2 <- dplyr::select(df2,StockKeyLabel,
+                             F_FMSY,
+                             catches,
+                             landings,
+                             discards,
+                             FMSY,
+                             F, 
+                             Ecoregion)
+        df3 <- dplyr::group_by(df,StockKeyLabel, AssessmentYear)
+        df3 <- dplyr::filter(df3, Year %in% c(AssessmentYear, (AssessmentYear - 1)))
+        df3 <- dplyr::mutate(df3, SSB_MSYBtrigger = ifelse(!is.na(MSYBtrigger),
+                                                           SSB / MSYBtrigger,
+                                                           NA))
+        df3 <- dplyr::select(df3, StockKeyLabel,Year,
+                             SSB_MSYBtrigger,
+                             SSB,
+                             MSYBtrigger)
+        check <- unique(df3[c("StockKeyLabel", "Year", "MSYBtrigger")])
+        check <- check[order(-check$Year),]
+        check2 <- check[duplicated(check$StockKeyLabel),]
+        df3 <- anti_join(df3,check2)
+        df4 <- dplyr::full_join(df2, df3)
+        df4
 }
 
 current <- stockstatus_CLD_current(sag_complete)
@@ -239,6 +380,7 @@ current$F_FMSY[which(current$StockKeyLabel == "cod.27.5a")] <- 0.91
 current$F_FMSY[which(current$StockKeyLabel == "pok.27.5a")] <- 0.56
 current$F_FMSY[which(current$StockKeyLabel == "lin.27.5a")] <- 0.99
 current$F_FMSY[which(current$StockKeyLabel == "had.27.5a")] <- 0.369/0.4
+current$catches[which(current$StockKeyLabel == "ghl.27.561214")] <- "23466"
 
 # In figure 1, GREEN means landings of assessed stocks with info for F and SSB 
 # reference points, ORANGE means landings of assessed stocks with info for only
@@ -254,7 +396,9 @@ current <- unique (current)
 
 #If there are no landings but catches, use catches
 current <- transform(current, landings2 = ifelse(!is.na(landings), landings, catches))
-current[is.na(current)] <- 0
+current$Ecoregion[is.na(current$Ecoregion)] <- "Widely"
+current$landings2[is.na(current$landings2)] <- "0"
+current$landings2 <- as.numeric(current$landings2)
 figure1 <- current %>%
         group_by(Ecoregion, color_fig1) %>% 
         summarise(landings = sum(landings2)) %>%
@@ -276,9 +420,9 @@ figure1 <- current %>%
 #                                     header = TRUE,
 #                                     fill = TRUE)
 
-catch_dat <- ICESCatchDataset2006_2017
-
-catch_dat_2017 <- subset(catch_dat, select= c("Species","Area", "2017"))
+catch_dat <- read.csv("ICESCatchDataset2006-2017.csv")
+names(catch_dat)
+catch_dat_2017 <- subset(catch_dat, select= c("Species","Area", "X2017"))
 
 #There might be issues with dplyr and operator, dplyr should be loaded the last, so in the search()
 #is first
@@ -303,14 +447,20 @@ catch_dat_2017 <- catch_dat_2017 %>%
                               "27.6.b.1", "27.7.c.1", "27.7.k.1", "27.8.e.1", "27.8.d.1", "27.9.b.1") ~ "Oceanic",
                 TRUE ~ "OTHER"))
 
+
+## NEED TO CHECK THIS
+
 library(operators)
 detach("package:dplyr", unload=TRUE)
 library(dplyr)
+
+#Atribute stocks in areas to widely, check with DAVE's help
 catch_dat_2017 <- catch_dat_2017 %>%
         mutate(ECOREGION2 = case_when(              
                 .$Species %in% c("ARU") & .$Area %in% c("27.7", "27.8", "27.9", "27.10", "27.12", "27.6.b") ~ "Widely",
-                .$Species %in% c("BLI", "BOC", "BSF","DGS", "GFB", "MAC", "SDV","WHB")  ~ "Widely",
-                .$Species %in% c("HER") & .$Area %in% c("27.1", "27.2", "27.5", "27.14.a") ~ "Widely",
+                .$Species %in% c("BLI") & .$Area %in% c("27.8", "27.9", "27.10", "27.12", "27.4") ~ "Widely",
+                .$Species %in% c("BOC", "BSF","DGS", "GFB", "MAC", "SDV","WHB") & .$Area %in% c("27")  ~ "Widely",
+                .$Species %in% c("HER") & .$Area %in% c("27.1", "27.2", "27.5.b", "27.14.a") ~ "Widely",
                 .$Species %in% c("HKE") & .$Area %in% c("27.4", "27.6", "27.7", "27.8.a","27.8.b","27.8.d") ~ "Widely",
                 .$Species %in% c("HOM") & .$Area %in% c("27.8", "27.2.a", "27.4.a", "27.5.b","27.6.a",
                                                         "27.7.a","27.7.b","27.7.c","27.7.e","27.7.f",
@@ -318,32 +468,75 @@ catch_dat_2017 <- catch_dat_2017 %>%
                 .$Species %in% c("LIN") & .$Area %!in% c("27.1", "27.2", "27.5a", "27.5.b") ~ "Widely",
                 .$Species %in% c("RNG") & .$Area %in% c("27.6", "27.7", "27.5b", "27.12.b") ~ "Widely",
                 .$Species %in% c("USK") & .$Area %in% c("27.4", "27.7", "27.8", "27.9","27.3.a","27.5.b",
-                                                        "27.6.a", "27.12.b" ) ~ "Widely")) 
+                                                        "27.6.a", "27.12.b" ) ~ "Widely"))
 
 
-#Problem with Iceland, Greenland and Faroes landings, catches in Widely wont show up also here
+
+
+
+# catch_dat_2017 <- catch_dat_2017 %>%
+#         mutate(ECOREGION2 = case_when(              
+#                 .$Species %in% c("ARU") & .$Area %in% c("27.7", "27.8", "27.9", "27.10", "27.12", "27.6.b") ~ "Widely",
+#                 .$Species %in% c("BLI") & .$Area %in% c("27.8", "27.9", "27.10", "27.12", "27.4") ~ "Widely",
+#                 .$Species %in% c("BOC", "BSF","DGS", "GFB", "MAC", "SDV","WHB") & .$Area %in% c("27")  ~ "Widely",
+#                 .$Species %in% c("HER") & .$Area %in% c("27.1", "27.2", "27.5.b", "27.14.a") ~ "Widely",
+#                 .$Species %in% c("HKE") & .$Area %in% c("27.4", "27.6", "27.7", "27.8.a","27.8.b","27.8.d") ~ "Widely",
+#                 .$Species %in% c("HOM") & .$Area %in% c("27.8", "27.2.a", "27.4.a", "27.5.b","27.6.a",
+#                                                         "27.7.a","27.7.b","27.7.c","27.7.e","27.7.f",
+#                                                         "27.7.g","27.7.h","27.7.i","27.7.j","27.7.k") ~ "Widely",
+#                 .$Species %in% c("LIN") & .$Area %!in% c("27.1", "27.2", "27.5a", "27.5.b") ~ "Widely",
+#                 .$Species %in% c("RNG") & .$Area %in% c("27.6", "27.7", "27.5b", "27.12.b") ~ "Widely",
+#                 .$Species %in% c("USK") & .$Area %in% c("27.4", "27.7", "27.8", "27.9","27.3.a","27.5.b",
+#                                                         "27.6.a", "27.12.b" ) ~ "Widely")) 
+
+
+# catch_dat_2017 <- catch_dat_2017 %>%
+#         mutate(ECOREGION2 = case_when(              
+#                 .$Species %in% c("ARU") & .$Area %in% c("27.7", "27.8", "27.9", "27.10", "27.12", "27.6.b") ~ "Widely",
+#                 .$Species %in% c("BLI", "BOC", "BSF","DGS", "GFB", "MAC", "SDV","WHB") & .$Area %in% c("27")   ~ "Widely",
+#                 .$Species %in% c("HER") & .$Area %in% c("27.1", "27.2") ~ "Widely",
+#                 .$Species %in% c("HKE") & .$Area %in% c("27.4", "27.6", "27.7", "27.8.a","27.8.b","27.8.d") ~ "Widely",
+#                 .$Species %in% c("HOM") & .$Area %in% c("27.8", "27.2.a", "27.4.a", "27.6.a",
+#                                                         "27.7.a","27.7.b","27.7.c","27.7.e","27.7.f",
+#                                                         "27.7.g","27.7.h","27.7.i","27.7.j","27.7.k") ~ "Widely",
+#                 .$Species %in% c("LIN") & .$Area %!in% c("27.1", "27.2") ~ "Widely",
+#                 .$Species %in% c("RNG") & .$Area %in% c("27.6", "27.7",  "27.12.b") ~ "Widely",
+#                 .$Species %in% c("USK") & .$Area %in% c("27.4", "27.7", "27.8", "27.9","27.3.a",
+#                                                         "27.6.a", "27.12.b" ) ~ "Widely")) 
+
+# Problem with double counting of WHB and MAC, NOT SOLVED
+
+
 catch_dat_2017 <- catch_dat_2017 %>%
-        mutate(ECOREGION2 = case_when(              
-                .$Species %in% c("ARU") & .$Area %in% c("27.7", "27.8", "27.9", "27.10", "27.12", "27.6.b") ~ "Widely",
-                .$Species %in% c("BLI", "BOC", "BSF","DGS", "GFB", "MAC", "SDV","WHB")  ~ "Widely",
-                .$Species %in% c("HER") & .$Area %in% c("27.1", "27.2") ~ "Widely",
-                .$Species %in% c("HKE") & .$Area %in% c("27.4", "27.6", "27.7", "27.8.a","27.8.b","27.8.d") ~ "Widely",
-                .$Species %in% c("HOM") & .$Area %in% c("27.8", "27.2.a", "27.4.a", "27.6.a",
-                                                        "27.7.a","27.7.b","27.7.c","27.7.e","27.7.f",
-                                                        "27.7.g","27.7.h","27.7.i","27.7.j","27.7.k") ~ "Widely",
-                .$Species %in% c("LIN") & .$Area %!in% c("27.1", "27.2") ~ "Widely",
-                .$Species %in% c("RNG") & .$Area %in% c("27.6", "27.7",  "27.12.b") ~ "Widely",
-                .$Species %in% c("USK") & .$Area %in% c("27.4", "27.7", "27.8", "27.9","27.3.a",
-                                                        "27.6.a", "27.12.b" ) ~ "Widely")) 
+        filter(ECOREGION != "OTHER"| ECOREGION2 == "Widely")
 
+# catch_dat_2017 <- catch_dat_2017 %>%
+#         mutate(ECOREGION2 = case_when(
+#                 .$Species %in% c( "BOC", "BSF","DGS", "GFB", "MAC", "SDV","WHB") &
+#                         .$ECOREGION %in% c("Celtic Seas","Greater North Sea", "Baltic Sea","Oceanic","BoBiscay & Iberia",
+#                                            "Iceland, Greenland and Faroes","Arctic Ocean", "Azores")   ~ "OTHER"))
 
+out <- catch_dat_2017%>% filter(Species %in% c("BOC", "BSF","DGS", "GFB", "MAC", "SDV","WHB")) 
+out <- out %>% filter(Area != "27")
+catch_dat_201x <- anti_join(catch_dat_2017, out)
+
+catch_dat_2017 <- catch_dat_201x
 catch_dat_2017 <- transform(catch_dat_2017, Final = ifelse(!is.na(ECOREGION2), "Widely", ECOREGION))
 
 catch_dat_2017 <- catch_dat_2017[, -c(4:5)]
 colnames(catch_dat_2017) <- c("Species", "Area", "Value", "Ecoregion")
 catch_dat_2017 <- catch_dat_2017 %>% filter(Ecoregion != "OTHER")
 
+
+
+# check <- catch_dat_201x%>% filter(Species %in% c("BOC", "BSF","DGS", "GFB", "MAC", "SDV","WHB")) 
+
+
+
 detach("package:operators", unload=TRUE)
+
+
+
 
 
 # The shadowed area in Figure 1 represents landings of unassessed stocks

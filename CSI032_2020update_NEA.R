@@ -26,11 +26,11 @@ load_sid <- function(year){
 
 # We will use the latest available assessments for each stock, from 2016 to 2019
 #DM: we may need to consider going back 5 years, i.e. 2015-2019 (that way we will make sure to have all teh stocks that only provide advcie every 5 years)
-
+#AV: Done, let´s see how it looks like
 # Load functions to load summary and reference points for those years
 
 load_sag_summary <-  function(year){
-        years <- ((year-3):year)
+        years <- ((year-4):year)
         out <- icesSAG::getSAG(stock = NULL,
                                years,
                                data = "summary",
@@ -43,6 +43,8 @@ load_sag_summary <-  function(year){
         
         sid <- subset(sid, !(DataCategory %in% c("6.2", "5.2", "6.3", "5.9", "5", "6.9", "6")))
         #DM : is it possible to say DataCategory >=5 instead? Just in case in future somebody uses one of teh other 5.x or 6.x methods
+        # sid <- subset(sid, DataCategory <=5)
+        #AV: done
         sid <- dplyr::select(sid,StockKeyLabel,
                              YearOfLastAssessment, PreviousStockKeyLabel)
         colnames(sid) <- c("fishstock", "AssessmentYear", "PreviousStockKeyLabel")
@@ -71,7 +73,7 @@ load_sag_summary <-  function(year){
 }
 
 load_sag_refpts <- function(year){
-        years <- ((year-3):year)
+        years <- ((year-4):year)
         out <- icesSAG::getSAG(stock = NULL,
                                years ,
                                purpose != "Advice",
@@ -80,6 +82,7 @@ load_sag_refpts <- function(year){
         sid<-load_sid(year)
         sid <-dplyr::filter(sid,!is.na(YearOfLastAssessment))
         sid <- subset(sid, !(DataCategory %in% c("6.2", "5.2", "6.3", "5.9", "5", "6.9", "6")))
+        # sid <- subset(sid, DataCategory <=5)
         sid <- dplyr::select(sid,StockKeyLabel,
                              YearOfLastAssessment, PreviousStockKeyLabel)
         colnames(sid) <- c("StockKeyLabel", "AssessmentYear", "PreviousStockKeyLabel")
@@ -148,6 +151,7 @@ sag_complete <- format_sag(summ, refpts)
 
 unique(sag_complete$StockKeyLabel)
 
+#195 when data category <= 5, why?
 #197 stocks, without categories 5 and 6
 
 # Load a file with the Ecoregions attributed for this product. In this file, 
@@ -174,6 +178,8 @@ names(ecoregions)
 
 unique(ecoregions$Ecoregion)
 
+# This year we are not using Oceanic Ecoregion, check again with Dave as it is in the MSFD
+
 sag_complete <- left_join(sag_complete,ecoregions, by = "StockKeyLabel")
 names(sag_complete)
 
@@ -192,12 +198,33 @@ sag_complete$FMSY[which(sag_complete$StockKeyLabel == "cod.27.5a")] <- 0.20
 
 sag_complete$FMSY[which(sag_complete$StockKeyLabel == "pok.27.5a")] <- 0.20
 #DM: same story as for cod5a (F time series, not HR)
+# sag_complete$F[which(sag_complete$StockKeyLabel == "pok.27.5a")]
 
 # sag_complete$FMSY[which(sag_complete$StockKeyLabel == "her.27.5a")] <- 0.15
 # DM: stock uses Fmsy. They have HRmgt for their management plan (0.15), but for our indices we should use Fmsy and the F time series (both currently correct)
 
 sag_complete$FMSY[which(sag_complete$StockKeyLabel == "lin.27.5a")] <- 0.24
 sag_complete$FMSY[which(sag_complete$StockKeyLabel == "usk.27.5a14")] <- 0.17
+
+#AV: download HR time series instead of F FIX, for cod.27.5a and pok.27.5a, rest are fine
+
+assessmentKey <- icesSAG::findAssessmentKey(stock = "cod.27.5a", year = 2019, published = TRUE,
+                  regex = TRUE, full = FALSE)
+cod <- icesSAG::getCustomColumns(assessmentKey)
+unique(cod$customName)
+cod <- cod %>% filter(customName == "HR")
+
+
+assessmentKey <- icesSAG::findAssessmentKey(stock = "pok.27.5a", year = 2019, published = TRUE,
+                           regex = TRUE, full = FALSE)
+pok <- icesSAG::getCustomColumns(assessmentKey)
+unique(pok$customName)
+pok <- pok %>% filter(customName == "HR")
+
+sag_complete <- sag_complete %>% mutate(F=replace(F, StockKeyLabel == "cod.27.5a", cod$customValue)) 
+sag_complete <- sag_complete %>% mutate(F=replace(F, StockKeyLabel == "pok.27.5a", pok$customValue))
+sag_complete <- sag_complete %>% mutate(fishingPressureDescription=replace(fishingPressureDescription, StockKeyLabel == "cod.27.5a", "Harvest Rate")) 
+sag_complete <- sag_complete %>% mutate(fishingPressureDescription=replace(fishingPressureDescription, StockKeyLabel == "pok.27.5a", "Harvest Rate"))
 
 
 #We use the latest available assessments but only up to the year 2018
@@ -433,29 +460,56 @@ catch_dat_2018 <- catch_dat_2018 %>%
                 .$Species %in% c("GUR") & .$Area %in% c("27.3", "27.4", "27.5", "27.6", "27.7", "27.8") ~ "Widely")) 
 
 
-catch_dat_2018 <- transform(catch_dat_2018, Final = ifelse(!is.na(ECOREGION2), "Widely", ECOREGION))
 
-catch_dat_2018 <- catch_dat_2018[, -c(4:6)]
-colnames(catch_dat_2018) <- c("Species", "Area", "Value", "Ecoregion")
-catch_dat_2018 <- catch_dat_2018 %>% filter(Ecoregion != "OTHER")
+catch_dat_2018 <- catch_dat_2018 %>%
+        filter(ECOREGION != "OTHER"| ECOREGION2 == "Widely")
 
-out <- catch_dat_2018%>% filter(Species %in% c("BOC", "BSF","DGS", "GFB", "MAC", "SDV","WHB")) 
+
+out <- catch_dat_2018%>% filter(Species %in% c("AGN", "ALF","BLI","BSK","BOC", "BSF","CYO","ELE", "DGS", "GAG", "GFB","GUQ", "MAC", 
+                                               "ORY","POR","RHG", "RJA","SAL", "SCK", "SDV","THR","TSU", "WHB")) 
 out <- out %>% filter(Area != "27")
-
 catch_dat_201x <- anti_join(catch_dat_2018, out)
 
-check <- catch_dat_201x%>% filter(Species %in% c("BOC", "BSF","DGS", "GFB", "MAC", "SDV","WHB")) 
-
 catch_dat_2018 <- catch_dat_201x
+catch_dat_2018 <- transform(catch_dat_2018, Final = ifelse(!is.na(ECOREGION2), "Widely", ECOREGION))
+
+catch_dat_2018 <- catch_dat_2018[, -c(4:5)]
+colnames(catch_dat_2018) <- c("Species", "Area", "Value", "Ecoregion")
+catch_dat_2018 <- catch_dat_2018 %>% filter(Ecoregion != "OTHER")
 
 detach("package:operators", unload=TRUE)
 
 
-catch_dat_2018$Value <- as.numeric(catch_dat_2018$Value)
+# The shadowed area in Figure 1 represents landings of unassessed stocks
 
 catch <- catch_dat_2018 %>%
         group_by(Ecoregion) %>% 
         summarise(Catch = sum(Value))
+
+
+# catch_dat_2018 <- transform(catch_dat_2018, Final = ifelse(!is.na(ECOREGION2), "Widely", ECOREGION))
+# 
+# catch_dat_2018 <- catch_dat_2018[, -c(4:6)]
+# colnames(catch_dat_2018) <- c("Species", "Area", "Value", "Ecoregion")
+# catch_dat_2018 <- catch_dat_2018 %>% filter(Ecoregion != "OTHER")
+# 
+# out <- catch_dat_2018%>% filter(Species %in% c("BOC", "BSF","DGS", "GFB", "MAC", "SDV","WHB")) 
+# out <- out %>% filter(Area != "27")
+# 
+# catch_dat_201x <- anti_join(catch_dat_2018, out)
+# 
+# check <- catch_dat_201x%>% filter(Species %in% c("BOC", "BSF","DGS", "GFB", "MAC", "SDV","WHB")) 
+# 
+# catch_dat_2018 <- catch_dat_201x
+# 
+# detach("package:operators", unload=TRUE)
+# 
+# 
+# catch_dat_2018$Value <- as.numeric(catch_dat_2018$Value)
+# 
+# catch <- catch_dat_2018 %>%
+#         group_by(Ecoregion) %>% 
+#         summarise(Catch = sum(Value))
 
 #This will be merged with the color counts of figure1
 
@@ -476,15 +530,133 @@ write.csv(figure1, file = "CSI032_figure1NEA_update2019.csv")
 # RED means both reference points not in GES, or if only one reference point is 
 # available, it is not in GES.
 
-current <- stockstatus_CLD_current(sag_complete)
 
-current$F_FMSY[which(current$StockKeyLabel == "cod.27.5a")] <- 0.91
-# current$F_FMSY[which(current$StockKeyLabel == "aru.27.5a14")] <- 0.91
-# current$F_FMSY[which(current$StockKeyLabel == "bli.27.5a14")] <- 0.91
-current$F_FMSY[which(current$StockKeyLabel == "pok.27.5a")] <- 0.56
-current$F_FMSY[which(current$StockKeyLabel == "lin.27.5a")] <- 0.99
-current$F_FMSY[which(current$StockKeyLabel == "had.27.5a")] <- 0.369/0.4
+## DAVE HERE!!
 
+# For the 2020 update, we will try this figure with stockstatus symbols,
+# in order to include more stocks
+
+load_sag_status <- function(year) {
+        years <- ((year-4):year)
+        out <- do.call("rbind", lapply(years,function(x) icesSAG::findAssessmentKey(stock = NULL,
+                                                                                    year = x,
+                                                                                    full = TRUE)[, c("AssessmentYear",
+                                                                                                     "AssessmentKey",
+                                                                                                     "StockKeyLabel", "Purpose")]))
+        out <- dplyr::filter(out,Purpose =="Advice")
+        out <- out[,-4]
+        sid<-load_sid(year)
+        sid <-dplyr::filter(sid,!is.na(YearOfLastAssessment))
+        sid <- dplyr::select(sid,StockKeyLabel,
+                             YearOfLastAssessment, PreviousStockKeyLabel, EcoRegion, AdviceCategory)
+        colnames(sid) <- c("StockKeyLabel", "AssessmentYear", "PreviousStockKeyLabel", "Ecoregion", "AdviceCategory")
+        old <- dplyr::filter(sid, AssessmentYear < 2017)
+        out1 <- merge(out, sid, by = c("StockKeyLabel", "AssessmentYear"),all = FALSE)
+        out2 <- merge(out, old, by.x = c("StockKeyLabel", "AssessmentYear"), by.y = c("PreviousStockKeyLabel", "AssessmentYear"),all = TRUE)
+        out2$StockKeyLabel <- out2$StockKeyLabel.y
+        
+        out2 <- subset(out2,select = -StockKeyLabel.y)
+        out <- merge(out1,out2, all = TRUE)
+        out <- subset(out,select = -PreviousStockKeyLabel)
+        out <-out[!duplicated(out$StockKeyLabel),]
+        
+        get_stock_status <- function(assessmentKey) {
+                dat <- icesSAG::getStockStatusValues(assessmentKey)[[1]]
+                if(is.null(dat)) stop(paste0("NULL value returned for assessmentKey = ", assessmentKey))
+                dat
+        }
+        out <- dplyr::filter(out, !is.na(out$AssessmentKey))
+        out2 <- dplyr::mutate(out, stock_status = purrr::map(.x = AssessmentKey, purrr::possibly(get_stock_status, otherwise = NA_real_)))
+        out2 <- dplyr::filter(out2, !is.na(stock_status)) 
+        out2 <- dplyr::select(out2, -AssessmentKey)
+        out2 <- tidyr::unnest(out2, stock_status)
+        out2 <- unique(out2)
+        # out3 <- subset(out, !(StockKeyLabel %in% out2$StockKeyLabel))
+}
+
+
+format_sag_status <- function(x) {
+        df <- x
+        df <- dplyr::mutate(df,status = case_when(status == 0 ~ "UNDEFINED",
+                                                  status == 1 ~ "GREEN",
+                                                  status == 2 ~ "GREEN", #qualitative green
+                                                  status == 3 ~ "ORANGE",
+                                                  status == 4 ~ "RED",
+                                                  status == 5 ~ "RED", #qualitative red
+                                                  status == 6 ~ "GREY",
+                                                  status == 7 ~ "GREY",
+                                                  status == 8 ~ "GREY",
+                                                  status == 9 ~ "GREY",
+                                                  TRUE ~ "OTHER"),
+                            fishingPressure = case_when(fishingPressure == "-" &
+                                                                type == "Fishing pressure" ~ "FQual",
+                                                        TRUE ~ fishingPressure),
+                            stockSize = case_when(stockSize == "-" &
+                                                          type == "Stock Size" ~ "SSBQual",
+                                                  TRUE ~ stockSize),
+                            stockSize = gsub("MSY BT*|MSY Bt*|MSYBT|MSYBt", "MSYBt", stockSize),
+                            variable = case_when(type == "Fishing pressure" ~ fishingPressure,
+                                                 type == "Stock Size" ~ stockSize,
+                                                 TRUE ~ type),
+                            variable = case_when(lineDescription == "Management plan" &
+                                                         type == "Fishing pressure" ~ "FMGT",
+                                                 lineDescription == "Management plan" &
+                                                         type == "Stock Size" ~ "SSBMGT",
+                                                 TRUE ~ variable),
+                            variable = case_when(
+                                    grepl("Fpa", variable) ~ "FPA",
+                                    grepl("Bpa", variable) ~ "BPA",
+                                    grepl("^Qual*", variable) ~ "SSBQual",
+                                    grepl("-", variable) ~ "FQual",
+                                    grepl("^BMGT", variable) ~ "SSBMGT",
+                                    grepl("MSYBtrigger", variable) ~ "BMSY",
+                                    grepl("FMSY", variable) ~ "FMSY",
+                                    TRUE ~ variable
+                            )) 
+        df <- dplyr::filter(df,variable != "-")
+        
+        df <- dplyr::filter(df, lineDescription != "Management plan")
+        df <- dplyr::filter(df, lineDescription != "Qualitative evaluation")
+        df <- dplyr::mutate(df,key = paste(StockKeyLabel, lineDescription, type))
+        df<- df[order(-df$year),]
+        df <- df[!duplicated(df$key), ]
+        df<- subset(df, select = -key)
+        df<- subset(df, select = c(StockKeyLabel, AssessmentYear, AdviceCategory, lineDescription, type, status))
+        df<- tidyr::spread(df,type, status)
+        
+        df2<- dplyr::filter(df,lineDescription != "Maximum Sustainable Yield")
+        df2<- dplyr::filter(df2,lineDescription != "Maximum sustainable yield")
+        
+        colnames(df2) <- c("StockKeyLabel","AssessmentYear","AdviceCategory","lineDescription","FishingPressure","StockSize" )
+        df2 <-dplyr::mutate(df2, SBL = case_when(FishingPressure == "GREEN" & StockSize == "GREEN" ~ "GREEN",
+                                                 FishingPressure == "RED" | StockSize == "RED" ~ "RED",
+                                                 FishingPressure == "ORANGE"  |  StockSize == "ORANGE" ~ "RED",
+                                                 TRUE ~ "GREY"))
+        df2<- subset(df2, select = c(StockKeyLabel, SBL))
+        df <- dplyr::left_join(df, df2)
+        df$lineDescription <- gsub("Maximum Sustainable Yield", "Maximum sustainable yield", df$lineDescription)
+        df$lineDescription <- gsub("Precautionary Approach", "Precautionary approach", df$lineDescription)
+        colnames(df) <- c("StockKeyLabel","AssessmentYear","AdviceCategory","lineDescription","FishingPressure","StockSize", "SBL" )
+        sid <- load_sid(year)
+        sid <- dplyr::filter(sid,!is.na(YearOfLastAssessment))
+        sid <- dplyr::select(sid,StockKeyLabel,
+                             YearOfLastAssessment, EcoRegion, FisheriesGuild)
+        sid$FisheriesGuild <- tolower(sid$FisheriesGuild)
+        colnames(sid) <- c("StockKeyLabel", "AssessmentYear", "Ecoregion", "FisheriesGuild")
+        df <- merge(df, sid, all = FALSE)
+        df
+}
+
+
+
+sag_status <- load_sag_status(2019)
+status_formatted <- format_sag_status(sag_status)
+
+unique(status_formatted$StockKeyLabel)
+
+
+
+current <- stockstatus_CLD_current(sag_complete2)
 
 current$color_fig2 <- case_when(current$F_FMSY < 1 & current$SSB_MSYBtrigger > 1 ~ "GREEN",
                                 current$F_FMSY < 1 | current$SSB_MSYBtrigger > 1 ~ "ORANGE",
