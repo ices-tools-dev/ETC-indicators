@@ -518,7 +518,7 @@ catch <- catch_dat_2018 %>%
 
 #This will be merged with the color counts of figure1
 
-############# DAVE!!, up to here, the rest is unchecked########
+############# ########
 ###############################################################
 
 unique(figure1$Ecoregion)
@@ -584,10 +584,10 @@ format_sag_status <- function(x) {
         df <- x
         df <- dplyr::mutate(df,status = case_when(status == 0 ~ "UNDEFINED",
                                                   status == 1 ~ "GREEN",
-                                                  status == 2 ~ "GREEN", #qualitative green
+                                                  status == 2 ~ "GREEN", 
                                                   status == 3 ~ "ORANGE",
                                                   status == 4 ~ "RED",
-                                                  status == 5 ~ "RED", #qualitative red
+                                                  status == 5 ~ "RED", 
                                                   status == 6 ~ "GREY",
                                                   status == 7 ~ "GREY",
                                                   status == 8 ~ "GREY",
