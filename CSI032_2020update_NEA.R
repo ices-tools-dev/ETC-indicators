@@ -208,14 +208,14 @@ sag_complete$FMSY[which(sag_complete$StockKeyLabel == "usk.27.5a14")] <- 0.17
 
 #AV: download HR time series instead of F FIX, for cod.27.5a and pok.27.5a, rest are fine
 
-assessmentKey <- icesSAG::findAssessmentKey(stock = "cod.27.5a", year = 2019, published = TRUE,
+assessmentKey <- icesSAG::findAssessmentKey(stock = "cod.27.5a", year = year, published = TRUE,
                   regex = TRUE, full = FALSE)
 cod <- icesSAG::getCustomColumns(assessmentKey)
 unique(cod$customName)
 cod <- cod %>% filter(customName == "HR")
 
 
-assessmentKey <- icesSAG::findAssessmentKey(stock = "pok.27.5a", year = 2019, published = TRUE,
+assessmentKey <- icesSAG::findAssessmentKey(stock = "pok.27.5a", year = year, published = TRUE,
                            regex = TRUE, full = FALSE)
 pok <- icesSAG::getCustomColumns(assessmentKey)
 unique(pok$customName)
@@ -229,7 +229,7 @@ sag_complete <- sag_complete %>% mutate(fishingPressureDescription=replace(fishi
 
 #We use the latest available assessments but only up to the year 2018
 
-sag_complete2 <- sag_complete %>% filter(Year < 2019)
+sag_complete2 <- sag_complete %>% filter(Year < year)
 
 
 ########### Figure1 and 2 #############
@@ -323,6 +323,7 @@ names(catch_dat)
 
 # we will aproximate the confidential catches with the previous three years average
 
+
 catch_dat$new <- rowMeans(subset(catch_dat, select = c(X2017,X2016,X2015)))
 
 
@@ -339,8 +340,11 @@ catch_dat_2018 <- rbind(catch_dat_2018, sub)
 # this file enumerates all areas for each stock, so we can filter catch_dat with it.
 catch_areas <- read.csv("ICESStockWithArea.csv")
 names(catch_areas)
+#DM: we could probably clean up this input file a bit. It seems to have both old and new codes, and other information we don't need. 
+# It would be good to be abel to generate this easily each yaer as stocks change over time.
 
 #Extract species code of the stock code
+#DM: I am a little worried here that some of our stocks include more than one species code (e.g. sol.27.9 I think is a mix of sole species), or may not match up with official codes (e.g. flounder in the Baltic until this year)
 catch_areas$Species <- substr(catch_areas$Code, start = 1, stop = 3)
 catch_areas$Species <- toupper(catch_areas$Species)
 unique(catch_areas$Species)
@@ -390,6 +394,7 @@ current <- left_join(current, catch_tot)
 
 #DAVE, please have a look to this df
 check <- current[,c(1,3,4,15)]
+write.csv(check, file="D:\\EEA-ETC\\EEA-ETC 2020\\Indicators 2020\\Catch data\\checkCatches.csv")
 
 # Discrepancies between catches and landings and also between official landings
 # and SAG landings. Dave.
@@ -649,7 +654,7 @@ format_sag_status <- function(x) {
 
 
 
-sag_status <- load_sag_status(2019)
+sag_status <- load_sag_status(year)
 status_formatted <- format_sag_status(sag_status)
 
 unique(status_formatted$StockKeyLabel)
