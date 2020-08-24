@@ -6,9 +6,21 @@
 # June 2020
 # Authors: Adriana Villamor and David Miller, ICES secretariat
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Clear Workspace
+rm(list = ls()) 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 library(dplyr)
 library(tidyr)
 library(data.table)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Load workspace with SAG data loaded
+# Then can skip lines up to about line 250 
+#load("tmpSAG_workspace.RData")   
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 # The latest available assessments will be used, although we will only refer to
 # year 2018, as official landings are only available until then.
@@ -41,10 +53,12 @@ load_sag_summary <-  function(year){
         # Stocks with Data Category 5 and 6 are not used, as these can't be 
         # considered full assessments (although advice may exist)
         
-        sid <- subset(sid, !(DataCategory %in% c("6.2", "5.2", "6.3", "5.9", "5", "6.9", "6")))
-        #DM : is it possible to say DataCategory >=5 instead? Just in case in future somebody uses one of teh other 5.x or 6.x methods
+        #sid <- subset(sid, !(DataCategory %in% c("6.2", "5.2", "6.3", "5.9", "5", "6.9", "6")))
         # sid <- subset(sid, DataCategory <=5)
-        #AV: done
+        #DM : I've changed my mind. I think we should load all SAG stocks. 
+        #This would be better for the catch estimation, and should work fine with the new way of getting stock status
+        # But Category 5 and 6 stocks should not count as assessed unless they have a non-gray stock status value for F or Stock size
+        
         sid <- dplyr::select(sid,StockKeyLabel,
                              YearOfLastAssessment, PreviousStockKeyLabel)
         colnames(sid) <- c("fishstock", "AssessmentYear", "PreviousStockKeyLabel")
@@ -81,8 +95,13 @@ load_sag_refpts <- function(year){
                                combine = TRUE)
         sid<-load_sid(year)
         sid <-dplyr::filter(sid,!is.na(YearOfLastAssessment))
-        sid <- subset(sid, !(DataCategory %in% c("6.2", "5.2", "6.3", "5.9", "5", "6.9", "6")))
+        
+        #sid <- subset(sid, !(DataCategory %in% c("6.2", "5.2", "6.3", "5.9", "5", "6.9", "6")))
         # sid <- subset(sid, DataCategory <=5)
+        #DM : I've changed my mind. I think we should load all SAG stocks. 
+        #This would be better for the catch estimation, and should work fine with the new way of getting stock status
+        # But Category 5 and 6 stocks should not count as assessed unless they have a non-gray stock status value for F or Stock size
+        
         sid <- dplyr::select(sid,StockKeyLabel,
                              YearOfLastAssessment, PreviousStockKeyLabel)
         colnames(sid) <- c("StockKeyLabel", "AssessmentYear", "PreviousStockKeyLabel")
@@ -151,6 +170,7 @@ sag_complete <- format_sag(summ, refpts)
 
 unique(sag_complete$StockKeyLabel)
 
+#DM 253 stocks with assessments in last 5 years
 #195 when data category <= 5, why?
 #197 stocks, without categories 5 and 6
 
@@ -171,6 +191,9 @@ new
 # stocks that do not show up in sag but are in the ecoregions file:
 out <- setdiff(ecoregions$StockKeyLabel, sag_complete$StockKeyLabel)
 out
+#DM: 
+#Leave out: "nep.27.4outFU"  "nep.27.6aoutFU" "nep.27.7outFU"  
+#Should keep: "pil.27.8c9a"    "rjb.27.89a"     "sal.neac.all"   "sal.wgc.all"  "thr.27.nea"    
 
 #Stocks in categories 5 and 6
 
@@ -183,14 +206,12 @@ unique(ecoregions$Ecoregion)
 sag_complete <- left_join(sag_complete,ecoregions, by = "StockKeyLabel")
 names(sag_complete)
 
-##DAVE 
-## Check if this is true this year as well. 
 ## Some stocks in good GES in Iceland do not show up because the reference point
 ## is HR instead of FMSY
 sag_complete$FMSY[which(sag_complete$StockKeyLabel == "aru.27.5a14")] <- 0.171
 
 # sag_complete$FMSY[which(sag_complete$StockKeyLabel == "bli.27.5a14")] <- 1.750 
-#DM: No RefPts for this stock
+#DM: No RefPts for this stock's last assessment before 2020
 
 sag_complete$FMSY[which(sag_complete$StockKeyLabel == "cod.27.5a")] <- 0.20 
 #DM - cod5a reported both F and HR, but uses HRmsy (0.2). But the time series below is F, not HR:
@@ -230,6 +251,14 @@ sag_complete <- sag_complete %>% mutate(fishingPressureDescription=replace(fishi
 #We use the latest available assessments but only up to the year 2018
 
 sag_complete2 <- sag_complete %>% filter(Year < year)
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Save workspace with SAG data loaded
+#save(list = ls(all.names = TRUE), file = "tmpSAG_workspace.RData", envir = .GlobalEnv)
+
+#load("tmpSAG_workspace.RData")   
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
 ########### Figure1 and 2 #############
