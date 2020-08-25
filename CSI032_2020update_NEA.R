@@ -777,11 +777,16 @@ write.csv(figure2, file = "CSI032_figure2NEA_update2020.csv")
 # A mean accross all ecoregions is shown. We also propose the trends separated
 # by ecoregion, as done for the Mediterranean and Black Sea.
 
-sag_complete2$FMSY <- as.numeric(sag_complete2$FMSY)
-sag_complete2$F <- as.numeric(sag_complete2$F)
-sag_complete2$MSYBtrigger <- as.numeric(sag_complete2$MSYBtrigger)
-sag_complete2$SSB <- as.numeric(sag_complete2$SSB)
-df <- dplyr::mutate(sag_complete2,F_FMSY = ifelse(!is.na(FMSY),
+# Only use category 1 and 2 stocks
+# unique(sid$DataCategory)
+# cat12 <- sid %>% filter(DataCategory %in% c("1", "2", "1.2", "1.8", "1.6", "1.7"))
+sag_fig3 <- sag_complete2 %>% filter(StockKeyLabel %in% cat12$StockKeyLabel)
+
+sag_fig3$FMSY <- as.numeric(sag_fig3$FMSY)
+sag_fig3$F <- as.numeric(sag_fig3$F)
+sag_fig3$MSYBtrigger <- as.numeric(sag_fig3$MSYBtrigger)
+sag_fig3$SSB <- as.numeric(sag_fig3$SSB)
+df <- dplyr::mutate(sag_fig3,F_FMSY = ifelse(!is.na(FMSY),
                                        F / FMSY, NA),
                     SSB_MSYBtrigger = ifelse(!is.na(MSYBtrigger),
                                              SSB / MSYBtrigger, NA))
@@ -796,7 +801,7 @@ unique(df2$Ecoregion)
 
 # DAVE, still applicable this year?
 # Wont use Arctic Ocean and Iceland, Greenland and Faroes for the mean fo Figure 3        
-# df2 <- df2 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Baltic Sea", "Greater North Sea")) 
+df2 <- df2 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Baltic Sea", "Greater North Sea")) 
 
 df3 <- dplyr::group_by(df2,Metric, Year) %>%
         mutate(Max = max(Value), Min = min(Value))
@@ -830,6 +835,10 @@ figure3 <- figure3 %>% filter(Year > 1946)
 figure3 <- figure3 %>% filter(Year < 2019)
 
 write.csv(figure3, file = "CSI032_figure3NEA_update2020.csv")
+
+# when filtering only EU ecoregions:
+write.csv(figure3, file = "CSI032_figure3NEA_update2020_EU.csv")
+write.csv(figure3, file = "CSI032_figure3NEA_update2020_EU_allcat.csv")
 
 
 # Not ready yet
