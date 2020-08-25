@@ -170,7 +170,7 @@ sag_complete <- format_sag(summ, refpts)
 
 unique(sag_complete$StockKeyLabel)
 
-#DM 254 stocks with assessments in last 5 years
+# 254 stocks with assessments in last 5 years
 
 # Load a file with the Ecoregions attributed for this product. In this file, 
 # the Ecoregions used in the latest STECF report are also shown, some slight 
@@ -192,7 +192,8 @@ out
 
 #DM, this is pending: 
 #Leave out: "nep.27.4outFU"  "nep.27.6aoutFU" "nep.27.7outFU"  
-#Should keep: "rjb.27.89a"     "sal.neac.all"   "sal.wgc.all"  "thr.27.nea"    
+#Should keep: "rjb.27.89a"     "sal.neac.all"   "sal.wgc.all"  "thr.27.nea" 
+# rjb and thr have zero catches, sal will be added by hand later on
 
 
 names(ecoregions)
@@ -329,6 +330,18 @@ current <- unique (current)
 current <- transform(current, landings2 = ifelse(!is.na(landings), landings, catches))
 current$landings2[is.na(current$landings2)] <- "0"
 current$landings2 <- as.numeric(current$landings2)
+
+# HERE I will manually add some catches that are either in custom columns in SAG,
+# or in the advice sheet.
+current$landings2[which(current$StockKeyLabel == "pol.27.67")] <- 2891
+current$landings2[which(current$StockKeyLabel == "raj.27.3a47d")] <- 1157.581
+current$landings2[which(current$StockKeyLabel == "sal.27.22-31")] <- 1158
+current$landings2[which(current$StockKeyLabel == "sal.27.32")] <- 66.9
+current$landings2[which(current$StockKeyLabel == "trs.27.22-32")] <- 311
+# THIS ONE COMES FROM OFFICIAL LANDINGS
+current$landings2[which(current$StockKeyLabel == "ele.2737.nea")] <- 587.496
+
+
 
 # HERE I have to remove from current df, stocks in higher categories with no assessment.
 sid <- load_sid(year)
@@ -574,7 +587,7 @@ unique(catch_figure1$Ecoregion)
 
 figure1 <- merge(figure1, catch_figure1, all = TRUE)
 
-write.csv(figure1, file = "CSI032_figure1NEA_update2019.csv")
+write.csv(figure1, file = "CSI032_figure1NEA_update2020.csv")
 
 
 # In Figure2, for the 2020 update we will use the stock status attributed, 
@@ -753,7 +766,7 @@ n <- DT[, .(number_of_stocks = length(unique(StockKeyLabel))), by = Ecoregion]
 
 figure2 <- left_join(figure2, n)
 
-write.csv(figure2, file = "CSI032_figure2NEA_update2019.csv")
+write.csv(figure2, file = "CSI032_figure2NEA_update2020.csv")
 
 
 ########### Figure 3 #############
@@ -764,6 +777,10 @@ write.csv(figure2, file = "CSI032_figure2NEA_update2019.csv")
 # A mean accross all ecoregions is shown. We also propose the trends separated
 # by ecoregion, as done for the Mediterranean and Black Sea.
 
+sag_complete2$FMSY <- as.numeric(sag_complete2$FMSY)
+sag_complete2$F <- as.numeric(sag_complete2$F)
+sag_complete2$MSYBtrigger <- as.numeric(sag_complete2$MSYBtrigger)
+sag_complete2$SSB <- as.numeric(sag_complete2$SSB)
 df <- dplyr::mutate(sag_complete2,F_FMSY = ifelse(!is.na(FMSY),
                                        F / FMSY, NA),
                     SSB_MSYBtrigger = ifelse(!is.na(MSYBtrigger),
@@ -777,8 +794,9 @@ df2 <-tidyr::gather(df,Metric, Value, -Year, -Ecoregion, -StockKeyLabel)
 df2 <- df2[complete.cases(df2),]
 unique(df2$Ecoregion)
 
+# DAVE, still applicable this year?
 # Wont use Arctic Ocean and Iceland, Greenland and Faroes for the mean fo Figure 3        
-df2 <- df2 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Baltic Sea", "Greater North Sea")) 
+# df2 <- df2 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Baltic Sea", "Greater North Sea")) 
 
 df3 <- dplyr::group_by(df2,Metric, Year) %>%
         mutate(Max = max(Value), Min = min(Value))
@@ -809,11 +827,12 @@ figure3 <- figure3 %>% left_join(stks)
 
 # Remove the only stock with biomass data from 1905 to 1945, dgs.27.nea
 figure3 <- figure3 %>% filter(Year > 1946)
-figure3 <- figure3 %>% filter(Year < 2018)
+figure3 <- figure3 %>% filter(Year < 2019)
 
-write.csv(figure3, file = "CSI032_figure3NEA_update2019.csv")
+write.csv(figure3, file = "CSI032_figure3NEA_update2020.csv")
 
 
+# Not ready yet
 #Figure 3 by Ecoregion, like in the Mediterranean, still have to check it.
 ##########
 
