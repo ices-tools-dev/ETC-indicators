@@ -423,7 +423,7 @@ current <- left_join(current, catch_tot)
 
 #DAVE, please have a look to this df
 check <- current[,c(1,3,4,15)]
-write.csv(check, file="D:\\EEA-ETC\\EEA-ETC 2020\\Indicators 2020\\Catch data\\checkCatches.csv")
+write.csv(check, file="D:\\EEA-ETC\\EEA-ETC 2020\\Indicators 2020\\Catch data\\checkCatchesALL.csv")
 
 # Discrepancies between catches and landings and also between official landings
 # and SAG landings. Dave.
