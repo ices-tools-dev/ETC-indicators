@@ -170,7 +170,9 @@ sag_complete <- format_sag(summ, refpts)
 
 unique(sag_complete$StockKeyLabel)
 
-# 254 stocks with assessments in last 5 years
+#DM 253 stocks with assessments in last 5 years
+#195 when data category <= 5, why?
+#197 stocks, without categories 5 and 6
 
 # Load a file with the Ecoregions attributed for this product. In this file, 
 # the Ecoregions used in the latest STECF report are also shown, some slight 
@@ -189,12 +191,11 @@ new
 # stocks that do not show up in sag but are in the ecoregions file:
 out <- setdiff(ecoregions$StockKeyLabel, sag_complete$StockKeyLabel)
 out
-
-#DM, this is pending: 
+#DM: 
 #Leave out: "nep.27.4outFU"  "nep.27.6aoutFU" "nep.27.7outFU"  
-#Should keep: "rjb.27.89a"     "sal.neac.all"   "sal.wgc.all"  "thr.27.nea" 
-# rjb and thr have zero catches, sal will be added by hand later on
+#Should keep: "pil.27.8c9a"    "rjb.27.89a"     "sal.neac.all"   "sal.wgc.all"  "thr.27.nea"    
 
+#Stocks in categories 5 and 6
 
 names(ecoregions)
 
@@ -263,7 +264,7 @@ sag_complete2 <- sag_complete %>% filter(Year < year)
 ########### Figure1 and 2 #############
 #######################################
 
-# In figure1 and 2 only the current status of the stocks (as of 2019) is used
+# In figure1 and 2 only the current status of the stocks (as of 2018) is used
 
 # Load function to extract the current status of a formatted sag df
 
@@ -326,43 +327,11 @@ current$color_fig1 <- case_when(current$F_FMSY != "NA" & current$SSB_MSYBtrigger
                                 TRUE ~ "ORANGE")
 current <- unique (current)
 
-#If there are no landings but catches, use catches
-current <- transform(current, landings2 = ifelse(!is.na(landings), landings, catches))
-current$landings2[is.na(current$landings2)] <- "0"
-current$landings2 <- as.numeric(current$landings2)
 
-# HERE I will manually add some catches that are either in custom columns in SAG,
-# or in the advice sheet.
-current$landings2[which(current$StockKeyLabel == "pol.27.67")] <- 2891
-current$landings2[which(current$StockKeyLabel == "raj.27.3a47d")] <- 1157.581
-current$landings2[which(current$StockKeyLabel == "sal.27.22-31")] <- 1158
-current$landings2[which(current$StockKeyLabel == "sal.27.32")] <- 66.9
-current$landings2[which(current$StockKeyLabel == "trs.27.22-32")] <- 311
-# THIS ONE COMES FROM OFFICIAL LANDINGS
-current$landings2[which(current$StockKeyLabel == "ele.2737.nea")] <- 587.496
+#This year we will use catches from nominal catches instead of the landings in SAG.
+# To deal with the issue of Ireland and Latvia confidentiality in the nominal catches in eurostat,
+# we will approximate them as the average of the last three years.
 
-
-
-# HERE I have to remove from current df, stocks in higher categories with no assessment.
-sid <- load_sid(year)
-sid <-dplyr::filter(sid,!is.na(YearOfLastAssessment))
-sid <- subset(sid, !(DataCategory %in% c("6.2", "5.2", "6.3", "5.9", "5", "6.9", "6")))
-unique(sid$StockKeyLabel)
-# 201 with salmons
-
-current2 <- current %>% filter(StockKeyLabel %in% sid$StockKeyLabel)
-#198 stocks in current2, that seems about right
-
-figure1 <- current2 %>%
-  group_by(Ecoregion, color_fig1) %>% 
-  summarise(landings = sum(landings2)) %>%
-  ungroup() %>%
-  spread(color_fig1, landings, fill=0)
-
-
-# This year total catches will be the sum of:
-# SAG catches for ICES stocks (as in nominal catches discards are not taken into account) +
-# Nominal catches for all others species and areas
 
 ##Load ICES official catches
  
@@ -416,7 +385,7 @@ colnames(catch_areas) <- c("StockKeyLabel", "Area", "Species")
 catch_areas <- catch_areas %>% filter(StockKeyLabel %in% sag_complete2$StockKeyLabel)
 unique(catch_areas$StockKeyLabel)
 
-#254, perfectooo
+#197, perfectooo
 
 #how to deal with _NK catches? will infer the lower _NK for each area, and add them
 # to the catch_areas dataframe
@@ -429,8 +398,8 @@ catch_areas_nk$Area <- sub(".[^.]+$", "", catch_areas_nk$Area)
 catch_areas_nk$Area_nk <- paste0(catch_areas_nk$Area, "_NK")
 
 catch_areas_nk <- catch_areas_nk[, -2]
-# check <- cbind(catch_areas, catch_areas_nk)
-# check <- check[,c(1,2,6)]
+check <- cbind(catch_areas, catch_areas_nk)
+check <- check[,c(1,2,6)]
 #have a look to check
 # Looks fine
 catch_areas_nk <- catch_areas_nk %>% 
@@ -439,32 +408,47 @@ catch_areas_nk <- catch_areas_nk %>%
 # This df has all areas and corresponding _NK in the inmediate lower aggregation level
 catch_areas <- rbind(catch_areas, catch_areas_nk)
 catch_areas <- unique(catch_areas)
-
-# I should remove catches for those areas and species from the 2018 nominal catches.
-
-catch_dat_2018_2 <- anti_join(catch_dat_2018, catch_areas, by=c("Area", "Species")) 
-
-# catch_2 <- left_join(catch_areas, catch_dat_2018)
+catch_2 <- left_join(catch_areas, catch_dat_2018)
 
 # catch_2 should include only catches in the relevant areas (_NK included) for the relevant species,
 # will double check in the light of the results, or also with Dave´s help.
 
-# catch_2$X2018 <- as.numeric(catch_2$X2018)
-# catch_2 <- catch_2 %>% filter(X2018 >0)
-# catch_tot <- catch_2 %>% group_by(StockKeyLabel) %>%  summarise(Value=sum(X2018))
-# 
-# current <- left_join(current, catch_tot)
+catch_2$X2018 <- as.numeric(catch_2$X2018)
+catch_2 <- catch_2 %>% filter(X2018 >0)
+catch_tot <- catch_2 %>% group_by(StockKeyLabel) %>%  summarise(Value=sum(X2018))
+
+current <- left_join(current, catch_tot)
 
 # Let's have a look to the landings in SAG vs the catches in official data
 
 #DAVE, please have a look to this df
-# check <- current[,c(1,3,4,15)]
-# write.csv(check, file="D:\\EEA-ETC\\EEA-ETC 2020\\Indicators 2020\\Catch data\\checkCatches.csv")
+check <- current[,c(1,3,4,15)]
+write.csv(check, file="D:\\EEA-ETC\\EEA-ETC 2020\\Indicators 2020\\Catch data\\checkCatchesALL.csv")
+
+# Discrepancies between catches and landings and also between official landings
+# and SAG landings. Dave.
+
+# COD in 21 is not reported in official catches
+# MEG only reported by IE as confidential, and 3 years average is zero
+
+ 
+figure1 <- current %>%
+        group_by(Ecoregion, color_fig1) %>%
+        summarise(landings = sum(Value)) %>%
+        ungroup() %>%
+        spread(color_fig1, landings, fill=0)
 
 
 
-catch_dat_2018_2 <- catch_dat_2018_2 %>%
-        mutate(Ecoregion = case_when(
+#There might be issues with dplyr and operator, dplyr should be loaded the last, so in the search()
+#is first
+# Attribute landings by Ecoregions used
+
+# DAVE, I guess that also here I am not taking into account _NK catches, at least in the cases 
+# where the aggregation level is low. I will think a bit more about it...
+
+catch_dat_2018 <- catch_dat_2018 %>%
+        mutate(ECOREGION = case_when(
                 .$Area %in% c("27.3.bc", "27.3.d", "27.3_nk") ~ "Baltic Sea",
                 .$Area %in% c("27.3.a", "27.4", "27.7.d") ~ "Greater North Sea",
                 
@@ -482,75 +466,59 @@ catch_dat_2018_2 <- catch_dat_2018_2 %>%
                               "27.6.b.1", "27.7.c.1", "27.7.k.1", "27.8.e.1", "27.8.d.1", "27.9.b.1") ~ "Widely",
                 TRUE ~ "OTHER"))
 
-
-
-# I don't think we need this now, as we are taking catches from sag for all these stocks, right?
-
-# library(operators)
-# detach("package:dplyr", unload=TRUE)
-# library(dplyr)
+library(operators)
+detach("package:dplyr", unload=TRUE)
+library(dplyr)
 
 #Atribute stocks in areas to widely, check with DAVE's help
-# catch_dat_2018 <- catch_dat_2018 %>%
-#         mutate(ECOREGION2 = case_when(              
-#                 .$Species %in% c("ARU") & .$Area %in% c("27.7", "27.8", "27.9", "27.10", "27.12", "27.6.b") ~ "Widely",
-#                 #included in bli nea, so out to avoid double counting
-#                 #.$Species %in% c("BLI") & .$Area %in% c("27.8", "27.9", "27.10", "27.12", "27.4") ~ "Widely",
-#                 .$Species %in% c("AGN", "ALF","BLI","BSK","BOC", "BSF","CYO","ELE", "DGS", "GAG", "GFB","GUQ", "MAC", 
-#                                  "ORY","POR","RHG", "RJA","SAL", "SCK", "SDV","THR","TSU", "WHB")
-#                 & .$Area %in% c("27")  ~ "Widely",
-#                 .$Species %in% c("HER") & .$Area %in% c("27.1", "27.2", "27.5.b", "27.14.a") ~ "Widely",
-#                 .$Species %in% c("HKE") & .$Area %in% c("27.4", "27.6", "27.7", "27.8.a","27.8.b","27.8.d") ~ "Widely",
-#                 .$Species %in% c("HOM") & .$Area %in% c("27.8", "27.2.a", "27.4.a", "27.5.b","27.6.a",
-#                                                         "27.7.a","27.7.b","27.7.c","27.7.e","27.7.f",
-#                                                         "27.7.g","27.7.h","27.7.i","27.7.j","27.7.k") ~ "Widely",
-#                 .$Species %in% c("LIN") & .$Area %!in% c("27.1", "27.2", "27.5a", "27.5.b") ~ "Widely",
-#                 .$Species %in% c("RNG") & .$Area %in% c("27.6", "27.7", "27.5b", "27.12.b") ~ "Widely",
-#                 #new
-#                 .$Species %in% c("RNG") & .$Area %in% c("27.1", "27.2", "27.4", "27.8", "27.9", "27.14.a", "27.14.b.2", "27.5.a.2") ~ "Widely",
-#                 .$Species %in% c("USK") & .$Area %in% c("27.4", "27.7", "27.8", "27.9","27.3.a","27.5.b",
-#                                                         "27.6.a", "27.12.b" ) ~ "Widely",
-#                 #new
-#                 .$Species %in% c("GUR") & .$Area %in% c("27.3", "27.4", "27.5", "27.6", "27.7", "27.8") ~ "Widely")) 
-# 
-# 
-# 
-# catch_dat_2018 <- catch_dat_2018 %>%
-#         filter(ECOREGION != "OTHER"| ECOREGION2 == "Widely")
-# 
-# 
-# out <- catch_dat_2018%>% filter(Species %in% c("AGN", "ALF","BLI","BSK","BOC", "BSF","CYO","ELE", "DGS", "GAG", "GFB","GUQ", "MAC", 
-#                                                "ORY","POR","RHG", "RJA","SAL", "SCK", "SDV","THR","TSU", "WHB")) 
-# out <- out %>% filter(Area != "27")
-# catch_dat_201x <- anti_join(catch_dat_2018, out)
-# 
-# catch_dat_2018 <- catch_dat_201x
-# catch_dat_2018 <- transform(catch_dat_2018, Final = ifelse(!is.na(ECOREGION2), "Widely", ECOREGION))
-# 
-# catch_dat_2018 <- catch_dat_2018[, -c(4:5)]
-# colnames(catch_dat_2018) <- c("Species", "Area", "Value", "Ecoregion")
-# catch_dat_2018 <- catch_dat_2018 %>% filter(Ecoregion != "OTHER")
-# 
-# detach("package:operators", unload=TRUE)
+catch_dat_2018 <- catch_dat_2018 %>%
+        mutate(ECOREGION2 = case_when(              
+                .$Species %in% c("ARU") & .$Area %in% c("27.7", "27.8", "27.9", "27.10", "27.12", "27.6.b") ~ "Widely",
+                #included in bli nea, so out to avoid double counting
+                #.$Species %in% c("BLI") & .$Area %in% c("27.8", "27.9", "27.10", "27.12", "27.4") ~ "Widely",
+                .$Species %in% c("AGN", "ALF","BLI","BSK","BOC", "BSF","CYO","ELE", "DGS", "GAG", "GFB","GUQ", "MAC", 
+                                 "ORY","POR","RHG", "RJA","SAL", "SCK", "SDV","THR","TSU", "WHB")
+                & .$Area %in% c("27")  ~ "Widely",
+                .$Species %in% c("HER") & .$Area %in% c("27.1", "27.2", "27.5.b", "27.14.a") ~ "Widely",
+                .$Species %in% c("HKE") & .$Area %in% c("27.4", "27.6", "27.7", "27.8.a","27.8.b","27.8.d") ~ "Widely",
+                .$Species %in% c("HOM") & .$Area %in% c("27.8", "27.2.a", "27.4.a", "27.5.b","27.6.a",
+                                                        "27.7.a","27.7.b","27.7.c","27.7.e","27.7.f",
+                                                        "27.7.g","27.7.h","27.7.i","27.7.j","27.7.k") ~ "Widely",
+                .$Species %in% c("LIN") & .$Area %!in% c("27.1", "27.2", "27.5a", "27.5.b") ~ "Widely",
+                .$Species %in% c("RNG") & .$Area %in% c("27.6", "27.7", "27.5b", "27.12.b") ~ "Widely",
+                #new
+                .$Species %in% c("RNG") & .$Area %in% c("27.1", "27.2", "27.4", "27.8", "27.9", "27.14.a", "27.14.b.2", "27.5.a.2") ~ "Widely",
+                .$Species %in% c("USK") & .$Area %in% c("27.4", "27.7", "27.8", "27.9","27.3.a","27.5.b",
+                                                        "27.6.a", "27.12.b" ) ~ "Widely",
+                #new
+                .$Species %in% c("GUR") & .$Area %in% c("27.3", "27.4", "27.5", "27.6", "27.7", "27.8") ~ "Widely")) 
+
+
+
+catch_dat_2018 <- catch_dat_2018 %>%
+        filter(ECOREGION != "OTHER"| ECOREGION2 == "Widely")
+
+
+out <- catch_dat_2018%>% filter(Species %in% c("AGN", "ALF","BLI","BSK","BOC", "BSF","CYO","ELE", "DGS", "GAG", "GFB","GUQ", "MAC", 
+                                               "ORY","POR","RHG", "RJA","SAL", "SCK", "SDV","THR","TSU", "WHB")) 
+out <- out %>% filter(Area != "27")
+catch_dat_201x <- anti_join(catch_dat_2018, out)
+
+catch_dat_2018 <- catch_dat_201x
+catch_dat_2018 <- transform(catch_dat_2018, Final = ifelse(!is.na(ECOREGION2), "Widely", ECOREGION))
+
+catch_dat_2018 <- catch_dat_2018[, -c(4:5)]
+colnames(catch_dat_2018) <- c("Species", "Area", "Value", "Ecoregion")
+catch_dat_2018 <- catch_dat_2018 %>% filter(Ecoregion != "OTHER")
+
+detach("package:operators", unload=TRUE)
 
 
 # The shadowed area in Figure 1 represents landings of unassessed stocks
 
-catch_dat_2018_2 <- catch_dat_2018_2 %>% filter(Ecoregion != "OTHER")
-catch_dat_2018_2$X2018 <- as.numeric(catch_dat_2018_2$X2018)
-catch <- catch_dat_2018_2 %>%
+catch <- catch_dat_2018 %>%
         group_by(Ecoregion) %>% 
-        summarise(Catch = sum(X2018))
-
-
-sag_catch <- current %>%
-  group_by(Ecoregion) %>% 
-  summarise(Catch = sum(landings2))
-
-#Add up both dataframes
-
-catch_figure1 <- bind_rows(catch, sag_catch)%>%group_by(Ecoregion) %>% summarise_all(sum)
-
+        summarise(Catch = sum(Value))
 
 
 # catch_dat_2018 <- transform(catch_dat_2018, Final = ifelse(!is.na(ECOREGION2), "Widely", ECOREGION))
@@ -583,22 +551,21 @@ catch_figure1 <- bind_rows(catch, sag_catch)%>%group_by(Ecoregion) %>% summarise
 ###############################################################
 
 unique(figure1$Ecoregion)
-unique(catch_figure1$Ecoregion)
+unique(catch$Ecoregion)
 
-figure1 <- merge(figure1, catch_figure1, all = TRUE)
+figure1 <- merge(figure1, catch, all = TRUE)
 
-write.csv(figure1, file = "CSI032_figure1NEA_update2020.csv")
+write.csv(figure1, file = "CSI032_figure1NEA_update2019.csv")
 
 
-# In Figure2, for the 2020 update we will use the stock status attributed, 
-# so we will have some unassessed stocks with colors
-
+# In Figure2, only assessed stocks are represented.
 # GREEN means both reference points in GES, ORANGE means only one ref point 
 # in GES, or in case only one reference point is available, this is in GES.
 # RED means both reference points not in GES, or if only one reference point is 
 # available, it is not in GES.
 
 
+## DAVE HERE!!
 
 # For the 2020 update, we will try this figure with stockstatus symbols,
 # in order to include more stocks
@@ -721,52 +688,38 @@ status_formatted <- format_sag_status(sag_status)
 
 unique(status_formatted$StockKeyLabel)
 
-#254
 
-status_formatted <- status_formatted %>% filter(lineDescription == "Maximum sustainable yield")
 
-unique(status_formatted$FishingPressure)
-unique(status_formatted$StockSize)
+current <- stockstatus_CLD_current(sag_complete2)
 
-status_formatted$color_fig2 <- case_when(status_formatted$FishingPressure == "GREEN" & status_formatted$StockSize == "GREEN" ~ "GREEN",
-                                         status_formatted$FishingPressure == "GREEN" | status_formatted$StockSize == "GREEN" ~ "ORANGE",
-                                         status_formatted$FishingPressure == "GREEN" & status_formatted$StockSize == "GREY" ~ "ORANGE",
-                                         status_formatted$FishingPressure == "GREY" & status_formatted$StockSize == "GREEN" ~ "ORANGE",
-                                         status_formatted$FishingPressure == "RED" & status_formatted$StockSize == "RED" ~ "RED",
-                                         status_formatted$FishingPressure == "GREY" & status_formatted$StockSize == "GREY"  ~ "GREY",
-                                         TRUE ~ "RED")
+current$color_fig2 <- case_when(current$F_FMSY < 1 & current$SSB_MSYBtrigger > 1 ~ "GREEN",
+                                current$F_FMSY < 1 | current$SSB_MSYBtrigger > 1 ~ "ORANGE",
+                                current$F_FMSY < 1 & is.na(current$SSB_MSYBtrigger) ~ "ORANGE",
+                                is.na(current$F_FMSY) & current$SSB_MSYBtrigger > 1 ~ "ORANGE",
+                                current$F_FMSY > 1 & current$SSB_MSYBtrigger < 1 ~ "RED",
+                                is.na(current$F_FMSY) & is.na(current$SSB_MSYBtrigger) ~ "GREY",
+                                TRUE ~ "RED")
+                                
+current <- unique (current)
 
-check <- status_formatted %>% filter(color_fig2 == "GREY")
+# check <- unique(current[c("color_fig2", "F_FMSY", "SSB_MSYBtrigger")])
 
-# For the total number of assessed stocks we need to remove those cat 5 and 6 which have both grey.
-sid <- load_sid(year)
-sid <-dplyr::filter(sid,!is.na(YearOfLastAssessment))
-cat56 <- subset(sid, (DataCategory %in% c("6.2", "5.2", "6.3", "5.9", "5", "6.9", "6")))
 
-out <- check %>% filter(check$StockKeyLabel %in% cat56$StockKeyLabel)
-
-status_formatted <- anti_join(status_formatted, out)
-
-#199 stocks assessed in all, 262 stocks in total
-
-status_formatted <- status_formatted[, -(8)]
-status_formatted <- left_join(status_formatted, ecoregions)
-
-figure2 <- status_formatted %>%
+figure2 <- current %>%
         dplyr::group_by(Ecoregion, color_fig2) %>% 
         dplyr::summarise(n= dplyr::n()) %>%
         ungroup() %>%
         spread(color_fig2, n, fill=0)
 
+DT <- data.table(current)
 
-#GREY are assessed stocks with no status assigned
+# In figure2 the shadowed area represents the total number of assessed stocks.
 
-DT <- data.table(ecoregions)
-n <- DT[, .(number_of_stocks = length(unique(StockKeyLabel))), by = Ecoregion]
+n <- DT[, .(number_of_assessed_stocks = length(unique(StockKeyLabel))), by = Ecoregion]
 
 figure2 <- left_join(figure2, n)
-
-write.csv(figure2, file = "CSI032_figure2NEA_update2020.csv")
+figure2 <- subset(figure2,select = -GREY)
+write.csv(figure2, file = "CSI032_figure2NEA_update2019.csv")
 
 
 ########### Figure 3 #############
@@ -777,6 +730,7 @@ write.csv(figure2, file = "CSI032_figure2NEA_update2020.csv")
 # A mean accross all ecoregions is shown. We also propose the trends separated
 # by ecoregion, as done for the Mediterranean and Black Sea.
 
+<<<<<<< HEAD
 # Only use category 1 and 2 stocks
 # unique(sid$DataCategory)
 # cat12 <- sid %>% filter(DataCategory %in% c("1", "2", "1.2", "1.8", "1.6", "1.7"))
@@ -787,6 +741,9 @@ sag_fig3$F <- as.numeric(sag_fig3$F)
 sag_fig3$MSYBtrigger <- as.numeric(sag_fig3$MSYBtrigger)
 sag_fig3$SSB <- as.numeric(sag_fig3$SSB)
 df <- dplyr::mutate(sag_fig3,F_FMSY = ifelse(!is.na(FMSY),
+=======
+df <- dplyr::mutate(sag_complete,F_FMSY = ifelse(!is.na(FMSY),
+>>>>>>> 196158c2145df0e4e738294c61c669d29cb363e0
                                        F / FMSY, NA),
                     SSB_MSYBtrigger = ifelse(!is.na(MSYBtrigger),
                                              SSB / MSYBtrigger, NA))
@@ -799,7 +756,6 @@ df2 <-tidyr::gather(df,Metric, Value, -Year, -Ecoregion, -StockKeyLabel)
 df2 <- df2[complete.cases(df2),]
 unique(df2$Ecoregion)
 
-# DAVE, still applicable this year?
 # Wont use Arctic Ocean and Iceland, Greenland and Faroes for the mean fo Figure 3        
 df2 <- df2 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Baltic Sea", "Greater North Sea")) 
 
@@ -832,16 +788,15 @@ figure3 <- figure3 %>% left_join(stks)
 
 # Remove the only stock with biomass data from 1905 to 1945, dgs.27.nea
 figure3 <- figure3 %>% filter(Year > 1946)
-figure3 <- figure3 %>% filter(Year < 2019)
+figure3 <- figure3 %>% filter(Year < 2018)
 
-write.csv(figure3, file = "CSI032_figure3NEA_update2020.csv")
+write.csv(figure3, file = "CSI032_figure3NEA_update2019.csv")
 
 # when filtering only EU ecoregions:
 write.csv(figure3, file = "CSI032_figure3NEA_update2020_EU.csv")
 write.csv(figure3, file = "CSI032_figure3NEA_update2020_EU_allcat.csv")
 
 
-# Not ready yet
 #Figure 3 by Ecoregion, like in the Mediterranean, still have to check it.
 ##########
 
