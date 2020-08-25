@@ -246,7 +246,7 @@ sag_complete <- sag_complete %>% mutate(fishingPressureDescription=replace(fishi
 sag_complete <- sag_complete %>% mutate(fishingPressureDescription=replace(fishingPressureDescription, StockKeyLabel == "pok.27.5a", "Harvest Rate"))
 
 
-#We use the latest available assessments but only up to the year 2019
+#We use the latest available assessments but only up to the year 2018
 
 sag_complete2 <- sag_complete %>% filter(Year < year)
 
@@ -416,8 +416,8 @@ catch_areas_nk$Area <- sub(".[^.]+$", "", catch_areas_nk$Area)
 catch_areas_nk$Area_nk <- paste0(catch_areas_nk$Area, "_NK")
 
 catch_areas_nk <- catch_areas_nk[, -2]
-check <- cbind(catch_areas, catch_areas_nk)
-check <- check[,c(1,2,6)]
+# check <- cbind(catch_areas, catch_areas_nk)
+# check <- check[,c(1,2,6)]
 #have a look to check
 # Looks fine
 catch_areas_nk <- catch_areas_nk %>% 
