@@ -779,8 +779,11 @@ write.csv(figure2, file = "CSI032_figure2NEA_update2020.csv")
 
 # Only use category 1 and 2 stocks
 # unique(sid$DataCategory)
-# cat12 <- sid %>% filter(DataCategory %in% c("1", "2", "1.2", "1.8", "1.6", "1.7"))
-sag_fig3 <- sag_complete2 %>% filter(StockKeyLabel %in% cat12$StockKeyLabel)
+sid <- load_sid(year)
+cat1234 <- sid %>% filter(DataCategory %in% c("1", "2", "1.2", "1.8", "1.6", "1.7",
+                                            "3.2", "3", "3.3", "4.14", "3.9",
+                                            "3.14", "4.12", "2.13", "3.8", "4"))
+sag_fig3 <- sag_complete2 %>% filter(StockKeyLabel %in% cat1234$StockKeyLabel)
 
 sag_fig3$FMSY <- as.numeric(sag_fig3$FMSY)
 sag_fig3$F <- as.numeric(sag_fig3$F)
