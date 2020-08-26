@@ -241,10 +241,22 @@ pok <- icesSAG::getCustomColumns(assessmentKey)
 unique(pok$customName)
 pok <- pok %>% filter(customName == "HR")
 
+#need to get custom column 2 for lez.27.6b SSB
+
+assessmentKey <- icesSAG::findAssessmentKey(stock = "lez.27.6b", year = year, published = TRUE,
+                                            regex = TRUE, full = FALSE)
+lez <- icesSAG::getCustomColumns(assessmentKey)
+unique(lez$customName)
+lez <- lez %>% filter(customName == "B/Bmsy")
+
+
+
 sag_complete <- sag_complete %>% mutate(F=replace(F, StockKeyLabel == "cod.27.5a", cod$customValue)) 
 sag_complete <- sag_complete %>% mutate(F=replace(F, StockKeyLabel == "pok.27.5a", pok$customValue))
+sag_complete <- sag_complete %>% mutate(SSB=replace(SSB, StockKeyLabel == "lez.27.6b", lez$customValue))
 sag_complete <- sag_complete %>% mutate(fishingPressureDescription=replace(fishingPressureDescription, StockKeyLabel == "cod.27.5a", "Harvest Rate")) 
 sag_complete <- sag_complete %>% mutate(fishingPressureDescription=replace(fishingPressureDescription, StockKeyLabel == "pok.27.5a", "Harvest Rate"))
+sag_complete <- sag_complete %>% mutate(stockSizeDescription=replace(stockSizeDescription, StockKeyLabel == "lez.27.6b", "Biomass index"))
 
 
 #We use the latest available assessments but only up to the year 2018
@@ -837,11 +849,11 @@ figure3 <- figure3 %>% left_join(stks)
 figure3 <- figure3 %>% filter(Year > 1946)
 figure3 <- figure3 %>% filter(Year < 2019)
 
-write.csv(figure3, file = "CSI032_figure3NEA_update2020.csv")
+# write.csv(figure3, file = "CSI032_figure3NEA_update2020.csv")
 
 # when filtering only EU ecoregions:
 write.csv(figure3, file = "CSI032_figure3NEA_update2020_EU.csv")
-write.csv(figure3, file = "CSI032_figure3NEA_update2020_EU_allcat.csv")
+# write.csv(figure3, file = "CSI032_figure3NEA_update2020_EU_allcat.csv")
 
 
 # Not ready yet
