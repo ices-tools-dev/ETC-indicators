@@ -363,6 +363,7 @@ unique(sid$StockKeyLabel)
 # 201 with salmons
 
 current2 <- current %>% filter(StockKeyLabel %in% sid$StockKeyLabel)
+unique(current2$StockKeyLabel)
 #198 stocks in current2, that seems about right
 
 figure1 <- current2 %>%
@@ -477,8 +478,9 @@ catch_dat_2018_2 <- anti_join(catch_dat_2018, catch_areas, by=c("Area", "Species
 
 catch_dat_2018_2 <- catch_dat_2018_2 %>%
         mutate(Ecoregion = case_when(
-                .$Area %in% c("27.3.bc", "27.3.d", "27.3_nk") ~ "Baltic Sea",
-                .$Area %in% c("27.3.a", "27.4", "27.7.d") ~ "Greater North Sea",
+                .$Area %in% c("27.3.b.23", "27.3.c.22","27.3.d.24", "27.3.d.25", "27.3.d.26","27.3.d.27",
+                              "27.3.d.28.1","27.3.d.28.2","27.3.d.30","27.3.d.31","27.3.d.32","27.3_nk") ~ "Baltic Sea",
+                .$Area %in% c("27.3.a.20","27.3.a.21", "27.4.a", "27.4.b","27.4.c","27.7.d") ~ "Greater North Sea",
                 
                 .$Area %in% c("27.8.a", "27.8.b","27.8.c",
                               "27.8.d.2", "27.8.e.2", "27.9.a",
@@ -486,9 +488,9 @@ catch_dat_2018_2 <- catch_dat_2018_2 %>%
                 .$Area %in% c("27.6.a", "27.6.b.2","27.7.a", "27.7.b", "27.7.c.2",
                               "27.7.f", "27.7.g", "27.7.h","27.7.j.2", "27.7.k.2") ~ "Celtic Seas",
                 
-                .$Area %in% c("27.5","27.12.a_NK", "27.14.b.2", "27.12.a.3", "27.14.a" ) ~ "Iceland, Greenland and Faroes",
+                .$Area %in% c("27.5.a.1","27.5.a.2", "27.5.b.1.a","27.5.b.1.b", "27.5.b.2", "27.12.a.2","27.12.a.4", "27.14.b.2", "27.12.a.3", "27.14.a" ) ~ "Iceland, Greenland and Faroes",
                 
-                .$Area %in% c("27.1", "27.2") ~ "Arctic Ocean",
+                .$Area %in% c("27.1.a", "27.1.b", "27.2.a.1", "27.2.a.2", "27.2.b.1", "27.2.b.2") ~ "Arctic Ocean",
                 .$Area %in% c("27.10.a.2") ~ "Azores",
                 .$Area %in% c("27.10.a.1", "27.10.b", "27.12.c", "27.12.a.1", "27.14.b.1", "27.12.b",
                               "27.6.b.1", "27.7.c.1", "27.7.k.1", "27.8.e.1", "27.8.d.1", "27.9.b.1") ~ "Widely",
@@ -849,10 +851,10 @@ figure3 <- figure3 %>% left_join(stks)
 figure3 <- figure3 %>% filter(Year > 1946)
 figure3 <- figure3 %>% filter(Year < 2019)
 
-# write.csv(figure3, file = "CSI032_figure3NEA_update2020.csv")
+write.csv(figure3, file = "CSI032_figure3NEA_update2020.csv")
 
 # when filtering only EU ecoregions:
-write.csv(figure3, file = "CSI032_figure3NEA_update2020_EU.csv")
+# write.csv(figure3, file = "CSI032_figure3NEA_update2020_EU.csv")
 # write.csv(figure3, file = "CSI032_figure3NEA_update2020_EU_allcat.csv")
 
 
@@ -860,7 +862,7 @@ write.csv(figure3, file = "CSI032_figure3NEA_update2020_EU.csv")
 #Figure 3 by Ecoregion, like in the Mediterranean, still have to check it.
 ##########
 
-df <- dplyr::mutate(sag_complete,F_FMSY = ifelse(!is.na(FMSY),
+df <- dplyr::mutate(sag_fig3,F_FMSY = ifelse(!is.na(FMSY),
                                                  F / FMSY,
                                                  NA),
                     SSB_MSYBtrigger = ifelse(!is.na(MSYBtrigger),
@@ -906,6 +908,6 @@ figure3 <- merge(figure3,stcks, all = TRUE)
 
 figure3 <- figure3 %>% filter(Year > 1945)
 
-write.csv(figure3, file = "CSI032_figure3byecoregionNEA_update2019.csv")
+write.csv(figure3, file = "CSI032_figure3byecoregionNEA_update2020.csv")
 
 
