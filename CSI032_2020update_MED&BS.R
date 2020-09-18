@@ -22,6 +22,8 @@ names(data)
 unique(data$key)
 # 44 stocks
 
+unique(data[c("EcoRegion", "ID")])
+
 df<- dplyr::select(data,Year,
                    key,
                    EcoRegion,
@@ -104,6 +106,8 @@ c
 # unique(old_assessments$ID)
 
 # they are new, so in total there are 69 stocks, 63 plus 6
+# I ave to remove Mut15_16, as they are now split
+
 
 old_assessments <- anti_join(fullMed, new_assessments)
 unique(old_assessments$Areaw)
