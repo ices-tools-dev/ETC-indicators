@@ -17,10 +17,16 @@ data2 <- read.csv("GFCM_SA_2020.csv", header = T)
 data2$key <- paste0(data2$Stock, data2$Area, "GFCM")
 data2$ID <- paste0(data2$Stock, data2$Area)
 
+# data3 <- read.csv("GFCM_BlackSea_2020.csv", header = T)
+# data3$key <- paste0(data3$Stock, data3$Area, "GFCM")
+# data3$ID <- paste0(data3$Stock, data3$Area)
+
 data <- rbind(data1,data2)
 names(data)
 unique(data$key)
 # 44 stocks
+
+unique(data[c("EcoRegion", "ID")])
 
 df<- dplyr::select(data,Year,
                    key,
@@ -54,6 +60,8 @@ df<- dplyr::select(data,Year,
 df2 <- df%>% group_by(ID) %>% top_n(1, Year)
 # Only two stocks have ref points of B
 
+# will add gfcm assessments by hand
+write.csv(df2, file = "df2.csv")
 
 df2$color_fig1 <- case_when(df2$F_Fref != "NA" & df2$B_Bref != "NA" ~ "GREEN",
                             is.na(df2$F_Fref) & is.na(df2$B_Bref) ~"RED",
@@ -61,8 +69,6 @@ df2$color_fig1 <- case_when(df2$F_Fref != "NA" & df2$B_Bref != "NA" ~ "GREEN",
 
 df2$catch <- as.numeric(df2$catch)
 df2$catch[is.na(df2$catch)] <- 0
-#some problem here
-# unique(df2$color_fig1)
 figure1 <- df2 %>%
         group_by(EcoRegion, color_fig1) %>% 
         summarise(landings = sum(catch)) %>%
@@ -105,6 +111,8 @@ c
 
 # they are new, so in total there are 69 stocks, 63 plus 6
 
+
+
 old_assessments <- anti_join(fullMed, new_assessments)
 unique(old_assessments$Areaw)
 
@@ -116,6 +124,9 @@ old_assessments$EcoRegion <- case_when(old_assessments$Areaw %in% c("01", "05","
                                        old_assessments$Areaw %in% c("29") ~ "Black Sea")
 
 old_assessments <- unique(old_assessments)
+# I have to remove Mut15_16, as they are now split
+old_assessments <- old_assessments %>% filter(old_assessments$ï..Stockid != "MUT_15_16_2012-11_STECF 12-19")
+
 
 # I take the terminal year of catches for each stock
 old_asses <- old_assessments%>% group_by(ID) %>% top_n(1, Year)
@@ -127,21 +138,17 @@ old_asses$Landings <- as.numeric(old_asses$Landings)
 
 old_asses$Landings <- as.numeric(old_asses$Landings)
 old_asses$Landings[is.na(old_asses$Landings)] <- 0
+old_asses <- unique(old_asses)
 red <-old_asses %>% group_by(EcoRegion) %>% summarise(sum(Landings))
 red
 
-figure1$RED <- c(0, 6523, 533, 2126)
+figure1[2,4] <- 14548
+figure1[3,4] <- 0                
+figure1[4,4] <- 2282
 gfcm <- read.csv("Med_catches2018_GFCM.csv")
 figure1 <- left_join(figure1, gfcm)
 
 write.csv(figure1, file = "CSI032_figure1MED&BS_update2020.csv")
-
-
-#Note, 23 May 2019: DAVE?
-# We can't consider B2003 a valid reference point for GES, so, all landings attributed
-# to the GREEN in figure one will be moved to orange in the Mediterranean.
-
-
 
 
 df2$color_fig2 <- case_when(df2$F_Fref < 1 & df2$B_Bref > 1 ~ "GREEN",
@@ -153,29 +160,32 @@ df2$color_fig2 <- case_when(df2$F_Fref < 1 & df2$B_Bref > 1 ~ "GREEN",
                                 TRUE ~ "RED")
 
 # check <- unique(df2[c("color_fig2", "F_Fref", "B_Bref")])
+df2 <- unique(df2)
+# this will duplicate rows by number of stocks
+df3 <- df2%>% uncount(number_stocks)
 
-figure2 <- df2 %>%
+figure2 <- df3 %>%
         group_by(EcoRegion, color_fig2) %>% 
         summarise(n= n()) %>%
         ungroup() %>%
         spread(color_fig2, n, fill=0)
 
-DT <- data.table(df2)
+# DT <- data.table(df3)
+# 
+# n <- DT[, .(number_of_assessed_stocks = length(key)), by = EcoRegion]
+# 
+# figure2 <- left_join(figure2, n)
 
-n <- DT[, .(number_of_assessed_stocks = length(unique(key))), by = EcoRegion]
-
-figure2 <- left_join(figure2, n)
-
-#Total number of stocks 
-datA <- df2 %>% select(c(ID, EcoRegion))
-unique(datA)
-names(fullMed)
-datB <- fullMed %>% select(c(ID, F.Subname))
-datB <- unique(datB)
-bla <- datA %>% filter(datA$ID %in% datB$ID)
-check <- fullMed %>% filter(ï..Stockid != df2$ID)
-unique(check$ï..Stockid)
-unique(fullMed$ï..Stockid)
-tot <- left_join(fullMed, df2)
-unique(tot$ï..Stockid)
+#Total number of stocks is uncertain in the Mediterranean
+# datA <- df2 %>% select(c(ID, EcoRegion))
+# unique(datA)
+# names(fullMed)
+# datB <- fullMed %>% select(c(ID, F.Subname))
+# datB <- unique(datB)
+# bla <- datA %>% filter(datA$ID %in% datB$ID)
+# check <- fullMed %>% filter(ï..Stockid != df2$ID)
+# unique(check$ï..Stockid)
+# unique(fullMed$ï..Stockid)
+# tot <- left_join(fullMed, df2)
+# unique(tot$ï..Stockid)
 write.csv(figure2, file = "CSI032_figure2MED&BS_update2020.csv")
