@@ -166,7 +166,8 @@ sag_complete <- format_sag(summ, refpts)
 
 unique(sag_complete$StockKeyLabel)
 
-# 255 stocks with assessments in last 5 years
+# 257 stocks with assessments between 2018 and 2020, although I asked
+# from 2016.
 
 # Load a file with the Ecoregions attributed for this product. In this file, 
 # the Ecoregions used in the latest STECF report are also shown, some slight 
@@ -181,17 +182,34 @@ ecoregions <- read.csv("Ecoregions.csv")
 new <- setdiff(sag_complete$StockKeyLabel, ecoregions$StockKeyLabel)
 new
 
-# Dave! we need to add these stocks to the ecoregions file 
-# [1] "bwp.27.2729-32" "bwq.27.2425"    "bwq.27.2628"  
+# character (0)
 
 # stocks that do not show up in sag but are in the ecoregions file:
 out <- setdiff(ecoregions$StockKeyLabel, sag_complete$StockKeyLabel)
 out
 
-#Dave! what about these, in ecoregions file but not in SAG: 
+#in ecoregions file but not in SAG: 
 
-# [1] "cod.27.7a"      "fle.27.2425"    "fle.27.2628"    "fle.27.2729-32" "ghl.27.1-2"    
-# [6] "mur.27.3a47d"   "sal.neac.all"   "sal.wgc.all"    "thr.27.nea"   
+# [1] "ghl.27.1-2"   "sal.neac.all" "sal.wgc.all"  "thr.27.nea"  
+
+# we need to import ghl.27.1-2 from SAG 2019 manually
+
+ghl <- icesSAG::getSAG(stock = "ghl.27.1-2",
+                       2019,
+                       data = "summary")
+
+ghl_ref <- icesSAG::getSAG(stock = "ghl.27.1-2",
+                           2019,
+                           data = "refpts")
+
+ghl_tot <- format_sag(ghl, ghl_ref)
+
+sag_complete <- rbind(sag_complete, ghl_tot)
+
+out <- setdiff(ecoregions$StockKeyLabel, sag_complete$StockKeyLabel)
+out
+
+#ok now
 
 names(ecoregions)
 
@@ -223,16 +241,19 @@ sag_complete$FMSY[which(sag_complete$StockKeyLabel == "pok.27.5a")] <- 0.20
 sag_complete$FMSY[which(sag_complete$StockKeyLabel == "lin.27.5a")] <- 0.24
 sag_complete$FMSY[which(sag_complete$StockKeyLabel == "usk.27.5a14")] <- 0.17
 
+
+#a bit lost here, will leave it as is for the time being, until I can speak with dave
+
 #AV: download HR time series instead of F FIX, for cod.27.5a and pok.27.5a, rest are fine
 
-assessmentKey <- icesSAG::findAssessmentKey(stock = "cod.27.5a", year = year, published = TRUE,
+assessmentKey <- icesSAG::findAssessmentKey(stock = "cod.27.5a", year = 2019, published = TRUE,
                   regex = TRUE, full = FALSE)
 cod <- icesSAG::getCustomColumns(assessmentKey)
 unique(cod$customName)
 cod <- cod %>% filter(customName == "HR")
 
 
-assessmentKey <- icesSAG::findAssessmentKey(stock = "pok.27.5a", year = year, published = TRUE,
+assessmentKey <- icesSAG::findAssessmentKey(stock = "pok.27.5a", year = 2019, published = TRUE,
                            regex = TRUE, full = FALSE)
 pok <- icesSAG::getCustomColumns(assessmentKey)
 unique(pok$customName)
@@ -240,7 +261,7 @@ pok <- pok %>% filter(customName == "HR")
 
 #need to get custom column 2 for lez.27.6b SSB
 
-assessmentKey <- icesSAG::findAssessmentKey(stock = "lez.27.6b", year = year, published = TRUE,
+assessmentKey <- icesSAG::findAssessmentKey(stock = "lez.27.6b", year = 2019, published = TRUE,
                                             regex = TRUE, full = FALSE)
 lez <- icesSAG::getCustomColumns(assessmentKey)
 unique(lez$customName)
@@ -256,7 +277,7 @@ sag_complete <- sag_complete %>% mutate(fishingPressureDescription=replace(fishi
 sag_complete <- sag_complete %>% mutate(stockSizeDescription=replace(stockSizeDescription, StockKeyLabel == "lez.27.6b", "Biomass index"))
 
 
-#We use the latest available assessments but only up to the year 2018
+#We use the latest available assessments but only up to the year 2019
 
 sag_complete2 <- sag_complete %>% filter(Year < year)
 
@@ -340,6 +361,8 @@ current <- transform(current, landings2 = ifelse(!is.na(landings), landings, cat
 current$landings2[is.na(current$landings2)] <- "0"
 current$landings2 <- as.numeric(current$landings2)
 
+
+# did not do this yet
 # HERE I will manually add some catches that are either in custom columns in SAG,
 # or in the advice sheet.
 current$landings2[which(current$StockKeyLabel == "pol.27.67")] <- 2891
@@ -357,11 +380,12 @@ sid <- load_sid(year)
 sid <-dplyr::filter(sid,!is.na(YearOfLastAssessment))
 sid <- subset(sid, !(DataCategory %in% c("6.2", "5.2", "6.3", "5.9", "5", "6.9", "6")))
 unique(sid$StockKeyLabel)
-# 201 with salmons
+unique(sid$DataCategory)
+# 199 
 
 current2 <- current %>% filter(StockKeyLabel %in% sid$StockKeyLabel)
 unique(current2$StockKeyLabel)
-#198 stocks in current2, that seems about right
+#197 stocks in current2, that seems about right
 
 figure1 <- current2 %>%
   group_by(Ecoregion, color_fig1) %>% 
@@ -375,43 +399,52 @@ figure1 <- current2 %>%
 # Nominal catches for all others species and areas
 
 ##Load ICES official catches
+# still unpublished, so I will use a local copy
  
-catchURL <- "http://ices.dk/data/Documents/CatchStats/OfficialNominalCatches.zip"
-tmpFileCatch <- tempfile(fileext = ".zip")
-download.file(catchURL, destfile = tmpFileCatch, mode = "wb", quiet = TRUE)
-ices_catch_official_raw <- read.csv(unz(tmpFileCatch,
-                                        grep("ICESCatchDataset.*.csv", unzip(tmpFileCatch,
-                                                                             list = TRUE)$Name,
-                                             value = TRUE)),
-                                    stringsAsFactors = FALSE,
-                                    header = TRUE,
-                                    fill = TRUE)
+# catchURL <- "http://ices.dk/data/Documents/CatchStats/OfficialNominalCatches.zip"
+# tmpFileCatch <- tempfile(fileext = ".zip")
+# download.file(catchURL, destfile = tmpFileCatch, mode = "wb", quiet = TRUE)
+# ices_catch_official_raw <- read.csv(unz(tmpFileCatch,
+#                                         grep("ICESCatchDataset.*.csv", unzip(tmpFileCatch,
+#                                                                              list = TRUE)$Name,
+#                                              value = TRUE)),
+#                                     stringsAsFactors = FALSE,
+#                                     header = TRUE,
+#                                     fill = TRUE)
 
 
-catch_dat <- ices_catch_official_raw
+# catch_dat <- ices_catch_official_raw
+catch_dat <- read.csv("NominalCatches_2006-2019_01082021.csv")
 names(catch_dat)
+
+#Dave, what to do about this now,
+# should we do average of previous 3 years? it would be 2 years of data 
+# in many cases, right?
 
 # we will approximate the confidential catches with the previous three years average
 
 
-catch_dat$new <- rowMeans(subset(catch_dat, select = c(X2017,X2016,X2015)))
 
+str(catch_dat)
 
-catch_dat_2018 <- subset(catch_dat, select= c("Species","Area","Country", "X2018", "new"))
+# catch_dat$X2018 <- as.numeric(catch_dat$X2018)
+# catch_dat$X2019 <- as.numeric(catch_dat$X2019)
+catch_dat$new <- rowMeans(subset(catch_dat, select = c(X2017,X2016, X2015)))
+catch_dat_2019 <- subset(catch_dat, select= c("Species","Area","Country", "X2019", "new"))
+# catch_dat_2018 <- subset(catch_dat, select= c("Species","Area","Country", "X2018", "new"))
 
-sub <- catch_dat_2018 %>% filter(X2018 == "c")
-sub$X2018 <- sub$new
+sub <- catch_dat_2019 %>% filter(X2019 == "c")
+sub$X2019 <- sub$new
 sub <- sub[,-5]
-catch_dat_2018 <- catch_dat_2018 %>% filter(X2018 != "c")
-catch_dat_2018 <- catch_dat_2018[,-5]
-catch_dat_2018 <- rbind(catch_dat_2018, sub)
+catch_dat_2019 <- catch_dat_2019 %>% filter(X2019 != "c")
+catch_dat_2019 <- catch_dat_2019[,-5]
+catch_dat_2019 <- rbind(catch_dat_2019, sub)
 
 
 # this file enumerates all areas for each stock, so we can filter catch_dat with it.
+# It is extracted from RECO with a query every year to account for new stocks.
 catch_areas <- read.csv("ICESStockWithArea.csv")
 names(catch_areas)
-#DM: we could probably clean up this input file a bit. It seems to have both old and new codes, and other information we don't need. 
-# It would be good to be abel to generate this easily each yaer as stocks change over time.
 
 #Extract species code of the stock code
 #DM: I am a little worried here that some of our stocks include more than one species code (e.g. sol.27.9 I think is a mix of sole species), or may not match up with official codes (e.g. flounder in the Baltic until this year)
@@ -419,14 +452,14 @@ catch_areas$Species <- substr(catch_areas$Code, start = 1, stop = 3)
 catch_areas$Species <- toupper(catch_areas$Species)
 unique(catch_areas$Species)
 
-catch_areas <- catch_areas[,c(2,4,15)]
+catch_areas <- catch_areas[,c(2,4,8)]
 colnames(catch_areas) <- c("StockKeyLabel", "Area", "Species")
 
 # only want areas of the stocks we have in sag_complete2
 catch_areas <- catch_areas %>% filter(StockKeyLabel %in% sag_complete2$StockKeyLabel)
 unique(catch_areas$StockKeyLabel)
 
-#254, perfectooo
+#258
 
 #how to deal with _NK catches? will infer the lower _NK for each area, and add them
 # to the catch_areas dataframe
@@ -435,7 +468,7 @@ catch_areas_nk <- catch_areas
 
 #remove last characters up to the point included 
 catch_areas_nk$Area <- sub(".[^.]+$", "", catch_areas_nk$Area)
-# paste _NL in the same place
+# paste _NK in the same place
 catch_areas_nk$Area_nk <- paste0(catch_areas_nk$Area, "_NK")
 
 catch_areas_nk <- catch_areas_nk[, -2]
@@ -452,7 +485,7 @@ catch_areas <- unique(catch_areas)
 
 # I should remove catches for those areas and species from the 2018 nominal catches.
 
-catch_dat_2018_2 <- anti_join(catch_dat_2018, catch_areas, by=c("Area", "Species")) 
+catch_dat_2019_2 <- anti_join(catch_dat_2019, catch_areas, by=c("Area", "Species")) 
 
 # catch_2 <- left_join(catch_areas, catch_dat_2018)
 
@@ -473,7 +506,7 @@ catch_dat_2018_2 <- anti_join(catch_dat_2018, catch_areas, by=c("Area", "Species
 
 
 
-catch_dat_2018_2 <- catch_dat_2018_2 %>%
+catch_dat_2019_2 <- catch_dat_2019_2 %>%
         mutate(Ecoregion = case_when(
                 .$Area %in% c("27.3.b.23", "27.3.c.22","27.3.d.24", "27.3.d.25", "27.3.d.26","27.3.d.27",
                               "27.3.d.28.1","27.3.d.28.2","27.3.d.30","27.3.d.31","27.3.d.32","27.3_nk") ~ "Baltic Sea",
@@ -547,11 +580,11 @@ catch_dat_2018_2 <- catch_dat_2018_2 %>%
 
 # The shadowed area in Figure 1 represents landings of unassessed stocks
 
-catch_dat_2018_2 <- catch_dat_2018_2 %>% filter(Ecoregion != "OTHER")
-catch_dat_2018_2$X2018 <- as.numeric(catch_dat_2018_2$X2018)
-catch <- catch_dat_2018_2 %>%
+catch_dat_2019_2 <- catch_dat_2019_2 %>% filter(Ecoregion != "OTHER")
+catch_dat_2019_2$X2019 <- as.numeric(catch_dat_2019_2$X2019)
+catch <- catch_dat_2019_2 %>%
         group_by(Ecoregion) %>% 
-        summarise(Catch = sum(X2018))
+        summarise(Catch = sum(X2019))
 
 
 sag_catch <- current %>%
@@ -598,7 +631,7 @@ unique(catch_figure1$Ecoregion)
 
 figure1 <- merge(figure1, catch_figure1, all = TRUE)
 
-write.csv(figure1, file = "CSI032_figure1NEA_update2020_28sep.csv")
+write.csv(figure1, file = "CSI032_figure1NEA_update2021_7oct.csv")
 
 
 # In Figure2, for the 2020 update we will use the stock status attributed, 
@@ -846,14 +879,15 @@ figure3 <- figure3 %>% left_join(stks)
 
 # Remove the only stock with biomass data from 1905 to 1945, dgs.27.nea
 figure3 <- figure3 %>% filter(Year > 1946)
-figure3 <- figure3 %>% filter(Year < 2019)
+figure3 <- figure3 %>% filter(Year < 2020)
 
-write.csv(figure3, file = "CSI032_figure3NEA_update2020.csv")
+write.csv(figure3, file = "CSI032_figure3NEA_update2021_7oct.csv")
 
 # when filtering only EU ecoregions:
 # write.csv(figure3, file = "CSI032_figure3NEA_update2020_EU.csv")
 # write.csv(figure3, file = "CSI032_figure3NEA_update2020_EU_allcat.csv")
 
+#up to here!
 
 # Not ready yet
 #Figure 3 by Ecoregion, like in the Mediterranean, still have to check it.
