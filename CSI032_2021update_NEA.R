@@ -244,6 +244,10 @@ sag_complete$FMSY[which(sag_complete$StockKeyLabel == "usk.27.5a14")] <- 0.17
 
 #a bit lost here, will leave it as is for the time being, until I can speak with dave
 
+#DM: For cod 5a The FishingPressure values are HR, the F values are in Custom 2. for pok.27.5a the fihsingPressure is also HR
+#   So don't need custom columns
+# For cod and pok, ref point should be HRmgt
+
 #AV: download HR time series instead of F FIX, for cod.27.5a and pok.27.5a, rest are fine
 
 assessmentKey <- icesSAG::findAssessmentKey(stock = "cod.27.5a", year = 2019, published = TRUE,
@@ -269,11 +273,11 @@ lez <- lez %>% filter(customName == "B/Bmsy")
 
 
 
-sag_complete <- sag_complete %>% mutate(F=replace(F, StockKeyLabel == "cod.27.5a", cod$customValue)) 
-sag_complete <- sag_complete %>% mutate(F=replace(F, StockKeyLabel == "pok.27.5a", pok$customValue))
+#sag_complete <- sag_complete %>% mutate(F=replace(F, StockKeyLabel == "cod.27.5a", cod$customValue)) 
+#sag_complete <- sag_complete %>% mutate(F=replace(F, StockKeyLabel == "pok.27.5a", pok$customValue))
 sag_complete <- sag_complete %>% mutate(SSB=replace(SSB, StockKeyLabel == "lez.27.6b", lez$customValue))
-sag_complete <- sag_complete %>% mutate(fishingPressureDescription=replace(fishingPressureDescription, StockKeyLabel == "cod.27.5a", "Harvest Rate")) 
-sag_complete <- sag_complete %>% mutate(fishingPressureDescription=replace(fishingPressureDescription, StockKeyLabel == "pok.27.5a", "Harvest Rate"))
+#sag_complete <- sag_complete %>% mutate(fishingPressureDescription=replace(fishingPressureDescription, StockKeyLabel == "cod.27.5a", "Harvest Rate")) 
+#sag_complete <- sag_complete %>% mutate(fishingPressureDescription=replace(fishingPressureDescription, StockKeyLabel == "pok.27.5a", "Harvest Rate"))
 sag_complete <- sag_complete %>% mutate(stockSizeDescription=replace(stockSizeDescription, StockKeyLabel == "lez.27.6b", "Biomass index"))
 
 
@@ -315,7 +319,7 @@ stockstatus_CLD_current <- function(x) {
         df$MSYBtrigger <- as.numeric(df$MSYBtrigger)
         df2 <- dplyr::group_by(df,StockKeyLabel)
         df2 <- dplyr::filter(df2,Year == AssessmentYear - 1)
-        df2 <- dplyr::mutate(df2,F_FMSY =  ifelse(!is.na(FMSY),
+        df2 <- dplyr::mutate(df2,F_FMSY =  ifelse(!is.na(FMSY),     #DM: how does it work with the HRmgt here?
                                                   F / FMSY,
                                                   NA))
         df2 <- dplyr::select(df2,StockKeyLabel,
@@ -423,7 +427,7 @@ names(catch_dat)
 
 # we will approximate the confidential catches with the previous three years average
 
-
+#DM: seem to be missing 2018 below
 
 str(catch_dat)
 
@@ -765,7 +769,7 @@ status_formatted <- format_sag_status(sag_status)
 
 unique(status_formatted$StockKeyLabel)
 
-#254
+#257
 
 status_formatted <- status_formatted %>% filter(lineDescription == "Maximum sustainable yield")
 
