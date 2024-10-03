@@ -758,7 +758,7 @@ n <- DT[, .(number_of_stocks = length(unique(StockKeyLabel))), by = Ecoregion]
 
 figure2 <- left_join(figure2, n)
 
-write.csv(figure2, file = "CSI032_figure2NEA_update2023_9oct.csv")
+write.csv(figure2, file = "CSI032_figure2NEA_update2024_2oct.csv")
 
 
 ########### Figure 3 #############
@@ -839,7 +839,7 @@ figure3 <- figure3 %>% left_join(stks)
 figure3 <- figure3 %>% filter(Year > 1946)
 # figure3 <- figure3 %>% filter(Year < 2022)
 
-write.csv(figure3, file = "CSI032_figure3NEA_update2023_30oct.csv")
+write.csv(figure3, file = "CSI032_figure3NEA_update2024_2oct.csv")
 
 
 
@@ -896,6 +896,6 @@ figure3 <- merge(figure3,stcks, all = TRUE)
 
 figure3 <- figure3 %>% filter(Year > 1945)
 
-write.csv(figure3, file = "CSI032_figure3byecoregionNEA_update2023_9oct.csv")
+write.csv(figure3, file = "CSI032_figure3byecoregionNEA_update2024_2oct.csv")
 
 
