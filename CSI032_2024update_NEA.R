@@ -696,9 +696,9 @@ sag_status$StockKeyLabel[which(sag_status$AssessmentKey == "18284")] <- "cod.27.
 sag_status <- sag_status %>% filter(AssessmentKey != "18396")
 
 
-#ane.27.9a component again I do it mannually
+#ane.27.9a component again I do it manually
 
-write.csv(sag_status, file = "sag_status.csv", row.names = FALSE)
+# write.csv(sag_status, file = "sag_status.csv", row.names = FALSE)
 
 sag_status <- read_csv("sag_status.csv")
 
