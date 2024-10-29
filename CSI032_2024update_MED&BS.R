@@ -20,7 +20,8 @@ library(data.table)
 
 stecf <- read.csv("MED_STECF_CFP_2024.csv")
 gfcm <- read.csv("MED_GFCM_2024.csv")
-
+unique(stecf$stk)
+unique(gfcm$stk)
 
 names(stecf)
 names(gfcm)

@@ -805,12 +805,18 @@ df2 <-tidyr::gather(df,Metric, Value, -Year, -Ecoregion, -StockKeyLabel)
 df2 <- df2[complete.cases(df2),]
 unique(df2$Ecoregion)
 
-# Wont use Arctic Ocean and Iceland, Greenland and Faroes for the mean of Figure 3        
+# Wont use Arctic Ocean and Iceland, Greenland and Faroes for the mean of Figure 3 
+
 df2 <- df2 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Baltic Sea", "Greater North Sea")) 
 
 df3 <- dplyr::group_by(df2,Metric, Year) %>%
         mutate(Max = max(Value), Min = min(Value))
         
+# we have been asked to separate Baltic Sea in this one:
+df3_baltic <- df3 %>% filter(Ecoregion == "Baltic Sea")
+
+df3 <- df3 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Greater North Sea"))
+
 df4 <- dplyr::group_by(df3,Metric, Year, Min, Max)%>%
         summarize(MEAN = mean(Value, na.rm = TRUE))
                 
@@ -839,17 +845,22 @@ figure3 <- figure3 %>% left_join(stks)
 figure3 <- figure3 %>% filter(Year > 1946)
 # figure3 <- figure3 %>% filter(Year < 2022)
 
-write.csv(figure3, file = "CSI032_figure3NEA_update2024_2oct.csv")
+write.csv(figure3, file = "CSI032_figure3NEA_update2024_29oct.csv")
+write.csv(figure3, file = "CSI032_figure3BalticSea_update2024_29oct.csv")
+
+
 
 
 
 
 #Do we need to do this?
 
-# HERE 2022 update
+# HERE 2024update
+#Baltic, NEA without, Med, BlackSea
 #Figure 3 by Ecoregion, like in the Mediterranean, still have to check it.
 ##########
-
+~
+  
 df <- dplyr::mutate(sag_fig3,F_FMSY = ifelse(!is.na(FMSY),
                                                  F / FMSY,
                                                  NA),
