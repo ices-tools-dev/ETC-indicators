@@ -149,11 +149,32 @@ format_sag <- function(x,y){
         out <- dplyr::left_join(df1,df2)
 }
 
+
+#Will mannually identify the components of North sea cod and remove the general assessment:
+
+assessmentKeys <- icesSAG::findAssessmentKey(stock = "cod.27.46a7d20", year = 2023, published = TRUE,
+                                             regex = TRUE, full = FALSE)
+
+
+summ$FishStock[which(summ$AssessmentKey == "18282")] <- "cod.27.46a7d20V"
+summ$FishStock[which(summ$AssessmentKey == "18283")] <- "cod.27.46a7d20NW"
+summ$FishStock[which(summ$AssessmentKey == "18284")] <- "cod.27.46a7d20S"
+
+summ <- summ %>% filter(AssessmentKey != "18396")
+
+refpts$StockKeyLabel[which(refpts$AssessmentKey == "18282")] <- "cod.27.46a7d20V"
+refpts$StockKeyLabel[which(refpts$AssessmentKey == "18283")] <- "cod.27.46a7d20NW"
+refpts$StockKeyLabel[which(refpts$AssessmentKey == "18284")] <- "cod.27.46a7d20S"
+
+refpts <- refpts %>% filter(AssessmentKey != "18396")
+
+
+
 sag_complete <- format_sag(summ, refpts)
 
 unique(sag_complete$StockKeyLabel)
 
-# 253 stocks with assessments between 2019 and 2023, but we know there are 3 North sea cod assessments
+# 255 stocks with assessments between 2019 and 2023, but we know there are 3 North sea cod assessments
 
 # Load a file with the Ecoregions attributed for this product. In this file, 
 # the Ecoregions used in the latest STECF report are also shown, some slight 
@@ -170,14 +191,14 @@ new
 
 # character(0)
 
+
 # stocks that do not show up in sag but are in the ecoregions file:
 out <- setdiff(ecoregions$StockKeyLabel, sag_complete$StockKeyLabel)
 out
-# [1] "cod.21.1"        "cod.21.1a-e"     "cod.2127.1f14"   "cod.27.47d20"    "cod.27.6a"      
-# [6] "her.27.3031"     "rjb.27.67a-ce-k" "rjb.27.89a"      "sal.27.22-31"    "sal.27.32"      
-# [11] "sal.neac.all"    "sal.wgc.all"     "thr.27.nea"      "trs.27.22-32"   
-
-#All checked by DM
+# [1] "cod.21.1"        "cod.21.1a-e"     "cod.2127.1f14"   "cod.27.46a7d20"  "cod.27.47d20"    "cod.27.6a"      
+# [7] "her.27.3031"     "rjb.27.67a-ce-k" "rjb.27.89a"      "sal.27.22-31"    "sal.27.32"       "sal.neac.all"   
+# [13] "sal.wgc.all"     "thr.27.nea"      "trs.27.22-32"
+# All checked by DM
 
 names(ecoregions)
 
@@ -185,18 +206,6 @@ unique(ecoregions$Ecoregion)
 
 sag_complete <- left_join(sag_complete,ecoregions, by = "StockKeyLabel")
 names(sag_complete)
-
-#Will mannually identify the components of North sea cod and remove the general assessment:
-
-assessmentKeys <- icesSAG::findAssessmentKey(stock = "cod.27.46a7d20", year = 2023, published = TRUE,
-                                            regex = TRUE, full = FALSE)
-
-
-sag_complete$StockKeyLabel[which(sag_complete$AssessmentKey == "18282")] <- "cod.27.46a7d20V"
-sag_complete$StockKeyLabel[which(sag_complete$AssessmentKey == "18283")] <- "cod.27.46a7d20NW"
-sag_complete$StockKeyLabel[which(sag_complete$AssessmentKey == "18284")] <- "cod.27.46a7d20S"
-
-sag_complete <- sag_complete %>% filter(AssessmentKey != "18396")
 
 
 #Manual changes to custom ref points:
@@ -241,16 +250,20 @@ assessmentKey <- icesSAG::findAssessmentKey(stock = "ane.27.9a", year = 2023, pu
 ane <- icesSAG::getCustomColumns(assessmentKey)
 unique(ane$customName)
 
+write.csv(sag_complete, file = "sag_complete.csv")
+
 #will try to describe this later on, in the meantime I did it manually in sag_complete
+
 library(readr)
-sag_complete <- read_csv("sag_complete.csv")
+sag_complete <- read_csv("sag_complete2.csv")
+
 
 #now ane.27.9a is divided in 2 components
 
 #We use the latest available assessments but only up to the year 2022
 
 sag_complete2 <- sag_complete %>% filter(Year < year)
-
+sag_complete2 <- unique(sag_complete2)
 
 ########### Figure1 #############
 #######################################
@@ -335,7 +348,7 @@ unique(sid$StockKeyLabel)
 
 current2 <- subset(current, !(StockKeyLabel %in% out$StockKeyLabel))
 unique(current2$StockKeyLabel)
-# 198
+# 200
 
 #I will use Stock status for several stocks:
 
@@ -407,7 +420,7 @@ sag_status <- sag_status %>% filter(AssessmentKey != "18396")
 
 write.csv(sag_status, file = "sag_status.csv", row.names = FALSE)
 
-sag_status <- read_csv("sag_status.csv")
+sag_status <- read_csv("sag_status2.csv")
 
 
 format_sag_status <- function(x) {
@@ -674,7 +687,7 @@ unique(catch_figure1$Ecoregion)
 
 figure1 <- merge(figure1, catch_figure1, all = TRUE)
 
-write.csv(figure1, file = "CSI032_figure1NEA_update2024_2oct.csv")
+write.csv(figure1, file = "CSI032_figure1NEA_update2024_7nov.csv")
 
 #################FIGURE 2##########################
 # In Figure2, we will use the stock status attributed, 
@@ -806,47 +819,95 @@ df2 <- df2[complete.cases(df2),]
 unique(df2$Ecoregion)
 
 # Wont use Arctic Ocean and Iceland, Greenland and Faroes for the mean of Figure 3 
+#will run figure 3 for NEA without Baltic and then only Baltic
 
-df2 <- df2 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Baltic Sea", "Greater North Sea")) 
+df2 <- df2 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Greater North Sea")) 
 
-df3 <- dplyr::group_by(df2,Metric, Year) %>%
-        mutate(Max = max(Value), Min = min(Value))
+df3 <-dplyr::group_by(df2,Metric, Year)%>% 
+  summarize(percentile_97_5 = quantile(Value, probs = 0.975), percentile_02_5 = quantile(Value, probs = 0.025), MEAN=mean(Value, na.rm = TRUE))
+
+
+# df3 <- dplyr::group_by(df2,Metric, Year) %>%
+#         mutate(Max = max(Value), Min = min(Value))
         
 # we have been asked to separate Baltic Sea in this one:
-df3_baltic <- df3 %>% filter(Ecoregion == "Baltic Sea")
+# df3_baltic <- df3 %>% filter(Ecoregion == "Baltic Sea")
 
-df3 <- df3 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Greater North Sea"))
+# df3 <- df3 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Greater North Sea"))
 
-df4 <- dplyr::group_by(df3,Metric, Year, Min, Max)%>%
-        summarize(MEAN = mean(Value, na.rm = TRUE))
+# df4 <- dplyr::group_by(df3,Metric, Year, Min, Max)%>%
+#         summarize(MEAN = mean(Value, na.rm = TRUE))
                 
 #Put back to short format
 
-fmsy <- df4 %>%filter(Metric == "F_FMSY")
-names(fmsy)
-fmsy <- fmsy[,-1]
-colnames(fmsy) <- c("Year", "Min_F/FMSY", "Max_F/FMSY", "MEAN_F/FMSY")
-
-ssb <- df4 %>%filter(Metric == "SSB_MSYBtrigger")
-names(ssb)
-ssb <- ssb[,-1]
-colnames(ssb) <- c("Year", "Min_SSB/MSYBtrigger", "Max_SSB/MSYBtrigger", "MEAN_SSB/MSYBtrigger")
+# fmsy <- df4 %>%filter(Metric == "F_FMSY")
+# names(fmsy)
+# fmsy <- fmsy[,-1]
+# colnames(fmsy) <- c("Year", "Min_F/FMSY", "Max_F/FMSY", "MEAN_F/FMSY")
+# 
+# ssb <- df4 %>%filter(Metric == "SSB_MSYBtrigger")
+# names(ssb)
+# ssb <- ssb[,-1]
+# colnames(ssb) <- c("Year", "Min_SSB/MSYBtrigger", "Max_SSB/MSYBtrigger", "MEAN_SSB/MSYBtrigger")
 
 #Number of assessed stocks by year
 
-DT <- data.table(df3)
+DT <- data.table(df2)
 
 stks <- DT[, .(number_of_assessed_stocks = length(unique(StockKeyLabel))), by = Year]
         
-figure3 <- ssb %>% left_join(fmsy)        
-figure3 <- figure3 %>% left_join(stks)
+# figure3 <- ssb %>% left_join(fmsy)        
+figure3 <- df3 %>% left_join(stks)
 
 # Remove the only stock with biomass data from 1905 to 1945, dgs.27.nea
 figure3 <- figure3 %>% filter(Year > 1946)
 # figure3 <- figure3 %>% filter(Year < 2022)
 
-write.csv(figure3, file = "CSI032_figure3NEA_update2024_29oct.csv")
-write.csv(figure3, file = "CSI032_figure3BalticSea_update2024_29oct.csv")
+write.csv(figure3, file = "CSI032_figure3NEA_NoBalticupdate2024_07nov.csv")
+
+#now same thing with Baltic
+
+df2 <-tidyr::gather(df,Metric, Value, -Year, -Ecoregion, -StockKeyLabel) 
+df2 <- df2[complete.cases(df2),]
+unique(df2$Ecoregion)
+
+df2 <- df2 %>% filter(Ecoregion %in% c("Baltic Sea")) 
+
+df3 <-dplyr::group_by(df2,Metric, Year)%>% 
+  summarize(percentile_97_5 = quantile(Value, probs = 0.975), percentile_02_5 = quantile(Value, probs = 0.025), MEAN=mean(Value, na.rm = TRUE))
+
+
+# df3 <- dplyr::group_by(df2,Metric, Year) %>%
+#   mutate(Max = max(Value), Min = min(Value))
+# 
+# df4 <- dplyr::group_by(df3,Metric, Year, Min, Max)%>%
+#   summarize(MEAN = mean(Value, na.rm = TRUE))
+
+#Put back to short format
+
+# fmsy <- df4 %>%filter(Metric == "F_FMSY")
+# names(fmsy)
+# fmsy <- fmsy[,-1]
+# colnames(fmsy) <- c("Year", "Min_F/FMSY", "Max_F/FMSY", "MEAN_F/FMSY")
+
+# ssb <- df4 %>%filter(Metric == "SSB_MSYBtrigger")
+# names(ssb)
+# ssb <- ssb[,-1]
+# colnames(ssb) <- c("Year", "Min_SSB/MSYBtrigger", "Max_SSB/MSYBtrigger", "MEAN_SSB/MSYBtrigger")
+
+#Number of assessed stocks by year
+
+DT <- data.table(df2)
+
+stks <- DT[, .(number_of_assessed_stocks = length(unique(StockKeyLabel))), by = Year]
+
+# figure3 <- ssb %>% left_join(fmsy)        
+figure3 <- df3 %>% left_join(stks)
+
+# Remove the only stock with biomass data from 1905 to 1945, dgs.27.nea
+figure3 <- figure3 %>% filter(Year > 1946)
+
+write.csv(figure3, file = "CSI032_figure3BalticSea_update2024_7nov.csv")
 
 
 
