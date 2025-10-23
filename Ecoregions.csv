@@ -2,7 +2,10 @@ StockKeyLabel,Ecoregion
 agn.27.nea,Widely
 alf.27.nea,Widely
 ane.27.8,BoBiscay & Iberia
+ane.27.9aS,BoBiscay & Iberia
+ane.27.9aW,BoBiscay & Iberia
 ane.27.9a,BoBiscay & Iberia
+anf.27.1-2,Arctic Ocean
 anf.27.3a46,Greater North Sea
 ank.27.78abd,BoBiscay & Iberia
 ank.27.8c9a,BoBiscay & Iberia
@@ -11,8 +14,10 @@ aru.27.5a14,Iceland
 aru.27.5b6a,Iceland
 aru.27.6b7-1012,Widely
 bli.27.5a14,Iceland
+bli.27.5b6712,Widely
 bli.27.5b67,Widely
 bli.27.nea,Widely
+bli.27.123a4,Widely
 bll.27.22-32,Baltic Sea
 bll.27.3a47de,Greater North Sea
 boc.27.6-8,Widely
@@ -24,8 +29,11 @@ bss.27.8ab,BoBiscay & Iberia
 bss.27.8c9a,BoBiscay & Iberia
 cap.27.1-2,Arctic Ocean
 cap.27.2a514,Iceland
+cod.21.1.osc,Iceland
+cod.21.1.isc,Iceland
 cod.21.1,Iceland
 cod.21.1a-e,Iceland
+cod.21.27.1.14,Iceland
 cod.2127.1f14,Iceland
 cod.27.1-2,Arctic Ocean
 cod.27.1-2.coastN,Arctic Ocean
@@ -79,7 +87,9 @@ her.27.irls,Celtic Seas
 her.27.nirs,Celtic Seas
 hke.27.3a46-8abd,Widely
 hke.27.8c9a,BoBiscay & Iberia
+hom.27.2a3a4a5b6a7a-ce-k8,Widely
 hom.27.2a4a5b6a7a-ce-k8,Widely
+hom.27.4bc7d,Greater North Sea
 hom.27.3a4bc7d,Greater North Sea
 hom.27.9a,BoBiscay & Iberia
 jaa.27.10a2,Azores
@@ -148,6 +158,7 @@ pok.27.1-2,Arctic Ocean
 pok.27.3a46,Greater North Sea
 pok.27.5a,Iceland
 pok.27.5b,Iceland
+pok.27.7-10,Widely
 pol.27.3a4,Greater North Sea
 pol.27.67,Celtic Seas
 pol.27.89a,BoBiscay & Iberia
@@ -184,6 +195,7 @@ rjh.27.4a6,Celtic Seas
 rjh.27.4c7d,Greater North Sea
 rjh.27.7afg,Celtic Seas
 rjh.27.7e,Celtic Seas
+rjh.27.4bc7d,Greater North Sea
 rjh.27.9a,BoBiscay & Iberia
 rji.27.67,Celtic Seas
 rjm.27.3a47d,Greater North Sea
@@ -207,6 +219,7 @@ rng.27.5a10b12ac14b,Iceland
 rng.27.5b6712b,Widely
 sal.27.22-31,Baltic Sea
 sal.27.32,Baltic Sea
+sal.nac.all,Widely
 sal.neac.all,Widely
 sal.wgc.all,Iceland
 san.27.6a,Celtic Seas
@@ -222,6 +235,9 @@ sbr.27.6-8,BoBiscay & Iberia
 sbr.27.9,BoBiscay & Iberia
 sck.27.nea,Widely
 sdv.27.nea,Widely
+seh.27.125a14,Widely
+seh.27.1,Arctic Ocean
+sez.27.2514,Widely
 sho.27.67,Celtic Seas
 sho.27.89a,BoBiscay & Iberia
 sol.27.20-24,Greater North Sea
