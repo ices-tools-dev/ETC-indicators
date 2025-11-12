@@ -92,18 +92,7 @@ years <- ((year-5):year)
           left_join(custom3, by = "AssessmentKey") 
         
         custom4$customName <- NA 
-        
-        # custom4$customName[which(custom4$SAGChartKey == 3 & custom4$settingValue == 1)] <- custom4$CustomRefPointName1
-        # custom4$customName[which(custom4$SAGChartKey == 3 & custom4$settingValue == 2)] <- custom4$CustomRefPointName2
-        # # custom4$customName[which(custom4$SAGChartKey == 3 & custom4$settingValue == 3)] <- custom4$CustomRefPointName3
-        # # custom4$customName[which(custom4$SAGChartKey == 3 & custom4$settingValue == 4)] <- custom4$CustomRefPointName4
-        # 
-        # custom4$customName[which(custom4$SAGChartKey == 4 & custom4$settingValue == 1)] <- custom4$CustomRefPointName1
-        # custom4$customName[which(custom4$SAGChartKey == 4 & custom4$settingValue == 2)] <- custom4$CustomRefPointName2
-        # # custom4$customName[which(custom4$SAGChartKey == 4 & custom4$settingValue == 3)] <- custom4$CustomRefPointName3
-        # # custom4$customName[which(custom4$SAGChartKey == 4 & custom4$settingValue == 4)] <- custom4$CustomRefPointName4
-        # 
-        
+    
         
         custom4$customName[custom4$SAGChartKey == 3 & custom4$settingValue == 1] <- 
           custom4$CustomRefPointName1[custom4$SAGChartKey == 3 & custom4$settingValue == 1]
@@ -144,10 +133,6 @@ years <- ((year-5):year)
         custom5 <- custom5%>% filter(customName != "SSB_lowerbound")
         
         custom6<- custom5 %>% select(AssessmentKey, SAGChartKey, settingValue)
-        
-        # in the df out, for each AssessmentKey in custom6, replace FMSY or MSYBtrigger by the corresponding CustomRefPointValue
-        # if SAGChartKey == 3, then FMSY should be CustomRefPointValue and the number in settingValue tells you which one
-        # if SAGChartKey == 4, then MSYBtrigger should be CustomRefPointValue and the number in settingValue tells you which one
         
         
         sag <- left_join(out2, out)
@@ -262,10 +247,6 @@ sag3 <- sag2 %>%
 #   ungroup() %>%
    select(-SAGChartKey, -settingValue)  # remove helper columns if not needed
 
-#count how many ref points were changed first in sag2 and then in sag3
-
-# count(sag2,UpdateFlag)
-# count(sag3,UpdateFlag)
 
 #
 sag3 <- sag3 %>%
@@ -276,24 +257,6 @@ sag3 <- sag3 %>%
   select(-na_count)  # optional: remove helper column
 
 
-#Filter setting values different 
-
-# unique(customRefPoint$settingValue)
-
-# I need to check these one by one
-# custom3 <- customRefPoint %>% filter(!(settingValue %in% c("1","2", "3", "4")))
-
-#nothing of this works anymore as I removed the flag
-
-# check <- sag3 %>% filter(UpdateFlag != "no change") %>%
-#   select(StockKeyLabel, AssessmentKey, FMSY, MSYBtrigger, UpdateFlag)
-# 
-# check <- left_join(check, sid)
-# check <- unique(check)
-# 
-# #Dave to check these stocks
-# check <- check %>% select(StockKeyLabel, AssessmentKey, FMSY, MSYBtrigger, UpdateFlag, DataCategory)
-# write.csv(check, file = "check_custom_refpointsv3.csv", row.names = FALSE)
 
 #will check the custom series of these stocks
 customSeries <- settings %>% filter(settingKey == 50)
@@ -355,21 +318,7 @@ sag4 <- sag3 %>%
     #   TRUE ~ "no change"
   ) #%>%
   
-  # ) 
-  
-  #   group_by(AssessmentKey) %>%
-  #   filter(!(any(UpdateFlag != "no change") & UpdateFlag == "no change")) %>%
-  #   ungroup() %>%
-  # select(-SAGChartKey, -settingValue)  # remove helper columns if not needed
-
-
-#What now Dave
-# check2 <- out3 %>% select(StockKeyLabel, AssessmentKey, FMSY, MSYBtrigger, CustomRefPointName1, CustomRefPointName2, CustomName1, CustomName2)
-# 
-# check2 <- unique(check2)
-# 
-# write.csv(check2, file = "check_custom_series.csv", row.names = FALSE)
-
+ 
 #An alternative way for custom ref points, if they exist they should be used, Icelandic stocks 
 
 custom <- sag%>% select(StockKeyLabel, AssessmentKey,58:68)
@@ -386,7 +335,13 @@ replace
 # [1] "ghl.27.1-2" "ane.27.9aW" "cod.27.5a"  "dgs.27.nea" "had.27.5a"  "pok.27.5a" 
 
 
-#These are not caught by the previous routine...
+# 2025 for dgs.27.nea we need to use TBiomass instead of SSB
+
+sag4$SSB[which(sag4$StockKeyLabel == "dgs.27.nea")] <- sag4$TBiomass[which(sag4$StockKeyLabel == "dgs.27.nea")]
+
+
+
+#These are not caught by the previous routine
 
 sag_frmt <- format_sag(sag4)
 
@@ -487,8 +442,6 @@ sag_frmt2 <- sag_frmt2 %>%
   )
 unique(sag_frmt2$StockKeyLabel)
 
-
-#some ref points got lost in the process, it is easier to just get them than finding out where they got lost
 
 sag_reduced <- sag%>% filter(AssessmentKey %in% sag_frmt2$AssessmentKey)
 sag_reduced <- sag_reduced %>% select("AssessmentKey", "FMSY", "MSYBtrigger")
@@ -771,29 +724,7 @@ format_sag_status <- function(x) {
   df
 }
 # 
-# 
-# sag_status_frmt <- format_sag_status(sag_status)
-# sag_status_frmt2 <- df
-# 
-# sag_status_frmt_merged <- sag_status_frmt_merged %>% filter(lineDescription == "Maximum sustainable yield")
-# 
-# sag_status_frmt_merged$color_bis <- case_when(sag_status_frmt_merged$FishingPressure != "GREY" & sag_status_frmt_merged$StockSize != "GREY" ~ "GREEN",
-#                                        sag_status_frmt_merged$FishingPressure == "GREY" & sag_status_frmt_merged$StockSize == "GREY" ~ "RED",
-#                                        TRUE ~ "ORANGE")
-# 
-# 
-# 
-# sag_status_frmt <- sag_status_frmt %>% filter(lineDescription == "Maximum sustainable yield")
-# 
-# sag_status_frmt$color_bis <- case_when(sag_status_frmt$FishingPressure != "GREY" & sag_status_frmt$StockSize != "GREY" ~ "GREEN",
-#                                         sag_status_frmt$FishingPressure == "GREY" & sag_status_frmt$StockSize == "GREY" ~ "RED",
-#                                 TRUE ~ "ORANGE")
-# 
-# 
-# subset <- sag_status_frmt_merged[,c(1,10)]
-# current2 <- left_join(current2,subset)
-# current2 <- mutate(current2, color_fig1 = ifelse(is.na(color_bis) , color_fig1, color_bis))
-# current2 <- current2[,-16]
+
 
 figure1 <- current2 %>%
   group_by(Ecoregion, color_fig1) %>% 
@@ -801,8 +732,6 @@ figure1 <- current2 %>%
   ungroup() %>%
   spread(color_fig1, Landings, fill=0)
 
-
-#Up to here, numbers are really off
 
 # Total catches will be the sum of:
 # SAG catches for ICES stocks (as in nominal catches discards are not taken into account) +
@@ -1054,6 +983,7 @@ unique(sid$DataCategory)
 cat56 <- subset(sid, (DataCategory %in% c("6.2", "5.2", "6.3", "5.9", "5", "6.9", "6", "5.3")))
 
 out <- check %>% filter(check$StockKeyLabel %in% cat56$StockKeyLabel)
+ecoregions <- ecoregions %>% filter(StockKeyLabel %in% sid$StockKeyLabel)
 
 status_formatted <- anti_join(status_formatted, out)
 
@@ -1072,11 +1002,14 @@ figure2 <- status_formatted %>%
 #GREY are assessed stocks with no status assigned
 
 DT <- data.table(ecoregions)
+DT <- DT %>% filter(StockKeyLabel %in% sid$StockKeyLabel)
+
 n <- DT[, .(number_of_stocks = length(unique(StockKeyLabel))), by = Ecoregion]
 
+#something wrong in this merge
 figure2 <- left_join(figure2, n)
 
-write.csv(figure2, file = "CSI032_figure2NEA_update2025_23oct.csv")
+write.csv(figure2, file = "CSI032_figure2NEA_update2025_28oct.csv")
 
 
 ########### Figure 3 #############
@@ -1088,16 +1021,6 @@ write.csv(figure2, file = "CSI032_figure2NEA_update2025_23oct.csv")
 # by ecoregion, as done for the Mediterranean and Black Sea.
 
 
-#I dont think we need this Dave
-# check new categories bewteen 1 and 4
-# unique(sid$DataCategory)
-# sid <- load_sid(year)
-# unique(sid$DataCategory)
-# cat1234 <- sid %>% filter(DataCategory %in% c("1", "2", "1.2", "1.8", "1.6", "1.7",
-#                                             "3.2", "3", "3.3", "4.14", "3.9",
-#                                             "3.14", "4.12", "2.13", "3.8", "4", "2.11"))
-# sag_fig3 <- sag_complete2 %>% filter(StockKeyLabel %in% cat1234$StockKeyLabel)
-
 
 sag_fig3 <- sag_frmt3
 sag_fig3$FMSY <- as.numeric(sag_fig3$FMSY)
@@ -1105,205 +1028,64 @@ sag_fig3$F <- as.numeric(sag_fig3$F)
 sag_fig3$MSYBtrigger <- as.numeric(sag_fig3$MSYBtrigger)
 sag_fig3$SSB <- as.numeric(sag_fig3$SSB)
 #DAVE, still applies?
-sag_fig3$MSYBtrigger[which(sag_fig3$StockKeyLabel == "nep.fu.15")] <- 3000000000
+# sag_fig3$MSYBtrigger[which(sag_fig3$StockKeyLabel == "nep.fu.15")] <- 3000000000
 
 
 df <- dplyr::mutate(sag_fig3,F_FMSY = ifelse(!is.na(FMSY),
                                        F / FMSY, NA),
                     SSB_MSYBtrigger = ifelse(!is.na(MSYBtrigger),
                                              SSB / MSYBtrigger, NA))
-df<- dplyr::select(df,Year,
+df1<- dplyr::select(df,Year,
                    StockKeyLabel,
                    Ecoregion,
-                   F_FMSY,
-                   SSB_MSYBtrigger) 
+                   F_FMSY) 
+df2<- dplyr::select(df,Year,
+                    StockKeyLabel,
+                    Ecoregion,
+                    SSB_MSYBtrigger) 
 
 
-df2 <-tidyr::gather(df,Metric, Value, -Year, -Ecoregion, -StockKeyLabel) 
-df2 <- df2[complete.cases(df2),]
-unique(df2$Ecoregion)
 
 
-##Apparently now we have to run the whole NEA with Baltic...
+df2_2 <-tidyr::gather(df2,Metric, Value, -Year, -Ecoregion, -StockKeyLabel) 
+df2_2 <- df2_2[complete.cases(df2_2),]
+unique(df2_2$Ecoregion)
 
-# df2 <- df2 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Greater North Sea", "Baltic Sea")) 
-df2_check <- df2 %>% filter(Value> 0)
+
+## NEA with Baltic
+
+df2_2 <- df2_2 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Greater North Sea", "Baltic Sea")) 
+
+# df2 <- df2 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Greater North Sea")) 
+
+df2_2_check <- df2_2 %>% filter(Value> 0)
 
 
-df3_check <-dplyr::group_by(df2_check,Metric, Year)%>% 
+df2_3_check <-dplyr::group_by(df2_2_check,Metric, Year)%>% 
   summarize(percentile_97_5 = quantile(Value, probs = 0.975), percentile_02_5 = quantile(Value, probs = 0.025), MEDIAN=median(Value, na.rm = TRUE))
 
 
-df3 <-dplyr::group_by(df2,Metric, Year)%>% 
+df2_3 <-dplyr::group_by(df2_2,Metric, Year)%>% 
   summarize(percentile_97_5 = quantile(Value, probs = 0.975), percentile_02_5 = quantile(Value, probs = 0.025), MEDIAN=median(Value, na.rm = TRUE))
 
-DT <- data.table(df2)
+DT <- data.table(df2_2)
 
 stks <- DT[, .(number_of_assessed_stocks = length(unique(StockKeyLabel))), by = Year]
 
 # figure3 <- ssb %>% left_join(fmsy)        
-figure3 <- df3 %>% left_join(stks)
+figure3 <- df2_3 %>% left_join(stks)
 
 # Remove the only stock with biomass data from 1905 to 1945, dgs.27.nea
 # figure3 <- figure3 %>% filter(Year > 1946)
 # figure3 <- figure3 %>% filter(Year < 2022)
 
-write.csv(figure3, file = "CSI032_figure3NEA_update2025_20oct.csv")
+write.csv(figure3, file = "CSI032_figure3NEA_SSB_update2025_30oct.csv")
 
+# find which stocks have data in 2022 and don't have data in 2023
 
+df2_2022 <- df2 %>% filter(Year == 2022)
 
+df2_2023 <- df2 %>% filter(Year == 2023)
 
-
-# Wont use Arctic Ocean and Iceland, Greenland and Faroes for the mean of Figure 3 
-#will run figure 3 for NEA without Baltic and then only Baltic
-
-df2 <- df2 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Greater North Sea")) 
-
-df3 <-dplyr::group_by(df2,Metric, Year)%>% 
-  summarize(percentile_97_5 = quantile(Value, probs = 0.975), percentile_02_5 = quantile(Value, probs = 0.025), MEAN=mean(Value, na.rm = TRUE))
-
-
-# df3 <- dplyr::group_by(df2,Metric, Year) %>%
-#         mutate(Max = max(Value), Min = min(Value))
-        
-# we have been asked to separate Baltic Sea in this one:
-# df3_baltic <- df3 %>% filter(Ecoregion == "Baltic Sea")
-
-# df3 <- df3 %>% filter(Ecoregion %in% c("BoBiscay & Iberia","Widely","Celtic Seas", "Greater North Sea"))
-
-# df4 <- dplyr::group_by(df3,Metric, Year, Min, Max)%>%
-#         summarize(MEAN = mean(Value, na.rm = TRUE))
-                
-#Put back to short format
-
-# fmsy <- df4 %>%filter(Metric == "F_FMSY")
-# names(fmsy)
-# fmsy <- fmsy[,-1]
-# colnames(fmsy) <- c("Year", "Min_F/FMSY", "Max_F/FMSY", "MEAN_F/FMSY")
-# 
-# ssb <- df4 %>%filter(Metric == "SSB_MSYBtrigger")
-# names(ssb)
-# ssb <- ssb[,-1]
-# colnames(ssb) <- c("Year", "Min_SSB/MSYBtrigger", "Max_SSB/MSYBtrigger", "MEAN_SSB/MSYBtrigger")
-
-#Number of assessed stocks by year
-
-DT <- data.table(df2)
-
-stks <- DT[, .(number_of_assessed_stocks = length(unique(StockKeyLabel))), by = Year]
-        
-# figure3 <- ssb %>% left_join(fmsy)        
-figure3 <- df3 %>% left_join(stks)
-
-# Remove the only stock with biomass data from 1905 to 1945, dgs.27.nea
-figure3 <- figure3 %>% filter(Year > 1946)
-# figure3 <- figure3 %>% filter(Year < 2022)
-
-write.csv(figure3, file = "CSI032_figure3NEA_NoBalticupdate2024_07nov.csv")
-
-#now same thing with Baltic
-
-df2 <-tidyr::gather(df,Metric, Value, -Year, -Ecoregion, -StockKeyLabel) 
-df2 <- df2[complete.cases(df2),]
-unique(df2$Ecoregion)
-
-df2 <- df2 %>% filter(Ecoregion %in% c("Baltic Sea")) 
-
-df3 <-dplyr::group_by(df2,Metric, Year)%>% 
-  summarize(percentile_97_5 = quantile(Value, probs = 0.975), percentile_02_5 = quantile(Value, probs = 0.025), MEAN=mean(Value, na.rm = TRUE))
-
-
-# df3 <- dplyr::group_by(df2,Metric, Year) %>%
-#   mutate(Max = max(Value), Min = min(Value))
-# 
-# df4 <- dplyr::group_by(df3,Metric, Year, Min, Max)%>%
-#   summarize(MEAN = mean(Value, na.rm = TRUE))
-
-#Put back to short format
-
-# fmsy <- df4 %>%filter(Metric == "F_FMSY")
-# names(fmsy)
-# fmsy <- fmsy[,-1]
-# colnames(fmsy) <- c("Year", "Min_F/FMSY", "Max_F/FMSY", "MEAN_F/FMSY")
-
-# ssb <- df4 %>%filter(Metric == "SSB_MSYBtrigger")
-# names(ssb)
-# ssb <- ssb[,-1]
-# colnames(ssb) <- c("Year", "Min_SSB/MSYBtrigger", "Max_SSB/MSYBtrigger", "MEAN_SSB/MSYBtrigger")
-
-#Number of assessed stocks by year
-
-DT <- data.table(df2)
-
-stks <- DT[, .(number_of_assessed_stocks = length(unique(StockKeyLabel))), by = Year]
-
-# figure3 <- ssb %>% left_join(fmsy)        
-figure3 <- df3 %>% left_join(stks)
-
-# Remove the only stock with biomass data from 1905 to 1945, dgs.27.nea
-figure3 <- figure3 %>% filter(Year > 1946)
-
-write.csv(figure3, file = "CSI032_figure3BalticSea_update2024_7nov.csv")
-
-
-
-
-
-
-#Do we need to do this?
-
-# HERE 2024update
-#Baltic, NEA without, Med, BlackSea
-#Figure 3 by Ecoregion, like in the Mediterranean, still have to check it.
-##########
-~
-  
-df <- dplyr::mutate(sag_fig3,F_FMSY = ifelse(!is.na(FMSY),
-                                                 F / FMSY,
-                                                 NA),
-                    SSB_MSYBtrigger = ifelse(!is.na(MSYBtrigger),
-                                             SSB / MSYBtrigger,
-                                             NA))
-df<- dplyr::select(df,Year,
-                   StockKeyLabel,
-                   Ecoregion,
-                   F_FMSY,
-                   SSB_MSYBtrigger) 
-df2 <-tidyr::gather(df,Metric, Value, -Ecoregion, -Year,-StockKeyLabel) 
-df2 <- df2[complete.cases(df2),]
-
-df3 <- dplyr::group_by(df2,Metric, Year, Ecoregion) %>%
-        mutate(Max = max(Value), Min = min(Value))
-
-df4 <- dplyr::group_by(df3,Metric, Year, Ecoregion, Min, Max)%>%
-        summarize(MEAN = mean(Value, na.rm = TRUE))
-
-#Put back to short format, 
-
-fmsy <- df4 %>%filter(Metric == "F_FMSY")
-names(fmsy)
-fmsy <- fmsy[,-1]
-colnames(fmsy) <- c("Year", "Ecoregion", "Min_F/FMSY", "Max_F/FMSY", "MEAN_F/FMSY")
-
-ssb <- df4 %>%filter(Metric == "SSB_MSYBtrigger")
-names(ssb)
-ssb <- ssb[,-1]
-colnames(ssb) <- c("Year", "Ecoregion", "Min_SSB/MSYBtrigger", "Max_SSB/MSYBtrigger", "MEAN_SSB/MSYBtrigger")
-
-#Number of assessed stocks by year
-
-
-DT <- data.table(df3)
-stcks <- DT %>% group_by(Ecoregion, Year)%>%summarise(number_of_assessed_stocks = length(unique(StockKeyLabel)))
-
-# stks <- DT[, .(number_of_assessed_stocks = length(unique(StockKeyLabel))), by = Year]
-
-figure3 <- ssb %>% left_join(fmsy)        
-figure3 <- merge(figure3,stcks, all = TRUE)
-# Remove the only stock with biomass data from 1905 to 1945, dgs.27.nea
-
-figure3 <- figure3 %>% filter(Year > 1945)
-
-write.csv(figure3, file = "CSI032_figure3byecoregionNEA_update2024_2oct.csv")
-
+check <- setdiff(df2_2022$StockKeyLabel, df2_2023$StockKeyLabel)
 
